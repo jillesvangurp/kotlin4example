@@ -15,7 +15,7 @@ val testDocOutsideClass by repo.md {
         // should contain BarFoo from this comment
         println("Hello" + " World!")
     }
-    +"${mdLinkToSelf()}"
+    +mdLinkToSelf()
     // and the output of the println
 }
 
