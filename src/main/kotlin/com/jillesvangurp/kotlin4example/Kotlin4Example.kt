@@ -274,44 +274,5 @@ class Kotlin4Example(
             example.use(block)
             return example.buf.toString()
         }
-
-
-
-        // fun markdownPageWithNavigation(page: Page, block: KotlinForExample.() -> Unit) {
-        //     val index = pages.indexOf(page)
-        //     val previous = if (index < 0) null else if (index == 0) null else pages[index - 1].fileName
-        //     val next = if (index < 0) null else if (index == pages.size - 1) null else pages[index + 1].fileName
-        //     val nav = listOfNotNull(
-        //         if (!previous.isNullOrBlank()) mdLink("previous", previous) else null,
-        //         if (!page.parent.isNullOrBlank()) mdLink("index", page.parent) else null,
-        //         if (!next.isNullOrBlank()) mdLink("next", next) else null
-        //     )
-        //
-        //     val example = KotlinForExample()
-        //
-        //     example.use(block)
-        //     val md =
-        //         """
-        //         # ${page.title}
-        //
-        //         """.trimIndent().trimMargin() + "\n\n" + example.buf.toString()
-        //
-        //     val pageWithNavigationMd =
-        //         (if (nav.isNotEmpty()) nav.joinToString(" | ") + "\n\n___\n\n" else "") +
-        //             md + "\n" +
-        //             (if (nav.isNotEmpty()) "___\n\n" + nav.joinToString(" | ") + "\n\n" else "") +
-        //             """
-        //                     This Markdown is Generated from Kotlin code. Please don't edit this file and instead edit the ${example.mdLinkToSelf(
-        //                 "source file"
-        //             )} from which this page is generated.
-        //             """.trimIndent()
-        //
-        //     File(page.outputDir).mkdirs()
-        //     File(page.outputDir, page.fileName).writeText(pageWithNavigationMd)
-        //     if (page.emitBookPage) {
-        //         File("epub").mkdirs()
-        //         File("epub", page.fileName).writeText(md)
-        //     }
-        // }
     }
 }
