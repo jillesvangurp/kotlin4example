@@ -38,7 +38,7 @@ Hello World
 
 As you can see, we indeed grabbed the output.
 
-Check out the kotlin source code that generates this markdown [here](https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/Readme.kt).
+Check out the kotlin source code that generates this markdown [here](https://github.com/jillesvangurp/kotlin4example/tree/master/com/jillesvangurp/kotlin4example/docs/readme.kt).
 
 ## Development status
 

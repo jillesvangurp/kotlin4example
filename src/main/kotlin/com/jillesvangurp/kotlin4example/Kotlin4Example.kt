@@ -124,8 +124,8 @@ class Kotlin4Example(
         clazz.qualifiedName!!.replace("\\$.*?$".toRegex(), "").replace('.', File.separatorChar) + ".kt"
 
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
-        val fn = this.sourceFileOfExampleCaller() ?: throw IllegalStateException("source file not found")
-        return mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/${fn.path}")
+        val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
+        return mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/${fn}")
     }
 
     fun <T> block(runBlock: Boolean = false, block: () -> T) {
@@ -190,10 +190,11 @@ class Kotlin4Example(
     }
 
     private fun getCallerSourceBlock(): String? {
-        val ste = getCallerStackTraceElement()
-        val sourceFile = ste.className.replace("\\$.*?$".toRegex(), "").replace('.', File.separatorChar) + ".kt"
+        val sourceFile = sourceFileOfCaller()
 
+        val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
+
         val lines = repo.sourcePaths.map {File(it, sourceFile).absolutePath}
             // the calculated fileName for the .class file does not match the source file for inner classes
             // so try to fix it by stripping the the Kt postfix
@@ -227,14 +228,26 @@ class Kotlin4Example(
         }
     }
 
-    internal fun sourceFileOfExampleCaller(): File? {
+    fun sourceFileOfCaller(): String? {
         val ste = getCallerStackTraceElement()
-        val fileName = (ste.className.replace("\\$.*?$".toRegex(), "").replace(
-            '.',
-            File.separatorChar
-        ) + ".kt").replace("Kt.kt",".kt")
-        return repo.sourcePaths.map { File(it, fileName) }.firstOrNull { it.exists() }
+        val pathElements = ste.className.split('.')
+        val relativeDir = pathElements.subList(0,pathElements.size-1).joinToString("${File.separatorChar}")
+        return "$relativeDir${File.separatorChar}${ste.fileName}"
+
     }
+
+    // internal fun sourceFileOfExampleCaller(): File? {
+    //     val ste = getCallerStackTraceElement()
+    //     println(ste.fileName)
+    //     val pathElements = ste.className.split('.')
+    //     val relativeDir = pathElements.subList(0,pathElements.size-1).joinToString("${File.separatorChar}")
+    //     println(relativeDir)
+    //     val fileName = (ste.className.replace("\\$.*?$".toRegex(), "").replace(
+    //         '.',
+    //         File.separatorChar
+    //     ) + ".kt").replace("Kt.kt",".kt")
+    //     return repo.sourcePaths.map { File(it, fileName) }.firstOrNull { it.exists() }
+    // }
 
     internal fun getCallerStackTraceElement(): StackTraceElement {
         return Thread.currentThread()
