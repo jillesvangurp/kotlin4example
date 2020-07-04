@@ -1,5 +1,7 @@
 plugins {
     kotlin("jvm") version "1.3.72"
+    id("com.github.ben-manes.versions") version "0.28.0" // gradle dependencyUpdates -Drevision=release
+    `maven-publish`
 }
 
 val slf4jVersion = "1.7.26"
@@ -36,5 +38,24 @@ tasks {
     }
     compileTestKotlin {
         kotlinOptions.jvmTarget = "1.8"
+    }
+}
+
+val artifactName = "es-kotlin-wrapper-client"
+val artifactGroup = "com.github.jillesvangurp"
+
+publishing {
+    publications {
+        create<MavenPublication>("lib") {
+            groupId = artifactGroup
+            artifactId = artifactName
+            from(components["java"])
+        }
+    }
+    repositories {
+        maven {
+            name = "myRepo"
+            url = uri("file://$buildDir/repo")
+        }
     }
 }
