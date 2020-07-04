@@ -41,7 +41,7 @@ tasks {
     }
 }
 
-val artifactName = "es-kotlin-wrapper-client"
+val artifactName = "kotlin4example"
 val artifactGroup = "com.github.jillesvangurp"
 
 publishing {
