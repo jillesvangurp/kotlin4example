@@ -1,8 +1,8 @@
 package com.jillesvangurp.kotlin4example.docs
 
-import com.jillesvangurp.kotlin4example.Repo
+import com.jillesvangurp.kotlin4example.SourceRepository
 
-val k4ERepo = Repo("https://github.com/jillesvangurp/kotlin4example")
+val k4ERepo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
 val readme by k4ERepo.md {
     +"""

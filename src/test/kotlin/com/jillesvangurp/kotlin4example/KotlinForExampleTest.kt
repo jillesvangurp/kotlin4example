@@ -1,12 +1,13 @@
 package com.jillesvangurp.kotlin4example
 
-import com.jillesvangurp.kotlin4example.docs.readme
+import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
+import org.junit.jupiter.api.assertThrows
 import kotlin.random.Random
 
-val repo = Repo("https://github.com/jillesvangurp/kotlin4example")
+val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
 val testDocOutsideClass by repo.md {
     // should not contain FooBar
@@ -29,6 +30,30 @@ class KotlinForExampleTest {
     @Test
     fun `link to self should be correct`() {
         testDocOutsideClass shouldContain "https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/KotlinForExampleTest.kt"
+    }
+
+    @Test
+    fun `do not allow long source lines`() {
+        assertThrows<IllegalArgumentException> {
+            repo.md {
+                block {
+                    // too long
+                    println("****************************************************************************************************")
+                }
+            }.value // make sure to access the value
+        }
+    }
+
+    @Test
+    fun `wrap long source lines`() {
+        repo.md {
+            block(wrap = true) {
+                // too long but will be wrapped
+                println("****************************************************************************************************")
+            }
+        }.value.lines().forEach {
+            it.length shouldBeLessThanOrEqual 80
+        } // make sure to access the value
     }
 
     @Test

@@ -14,20 +14,10 @@ private val logger: KLogger = KotlinLogging.logger { }
 fun mdLink(title: String, target: String) = "[$title]($target)"
 fun mdLink(page: Page) = mdLink(page.title, page.fileName)
 
-fun md(repo: Repo, block: Kotlin4Example.() -> Unit) = lazyOf(Kotlin4Example.markdown(repo,block))
-
-data class Repo(
-    val repoUrl: String,
-    val branch: String = "master",
-    val sourcePaths: Set<String> = setOf("src/main/kotlin", "src/test/kotlin")) {
-
-    fun md(block: Kotlin4Example.() -> Unit) = lazyOf(Kotlin4Example.markdown(this,block))
-}
+fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) = lazyOf(Kotlin4Example.markdown(sourceRepository,block))
 
 class Kotlin4Example(
-    private val repo: Repo
-    // val sourcePaths: MutableSet<String>,
-    // private val repoUrl: String = "https://github.com/jillesvangurp/es-kotlin-wrapper-client"
+    private val sourceRepository: SourceRepository
 ) : AutoCloseable {
     private val buf = StringBuilder()
 
@@ -55,9 +45,18 @@ class Kotlin4Example(
                 }
             }.joinToString("\n")
         }
-        if (!allowLongLines && c.lines().firstOrNull { it.length > lineLength } != null) {
-            logger.warn { "code block contains lines longer than 80 characters\n${(1 until lineLength).joinToString("") { "." } + "|"}\n$c" }
-            throw IllegalArgumentException("code block exceeds line length of ")
+        if(!allowLongLines) {
+            var l=1
+            var error=0
+            c.lines().forEach {
+                if(it.length > lineLength) {
+                    logger.warn { "code block contains lines longer than 80 characters at line $l:\n$it" }
+                    error++
+                }
+                l++
+            }
+            if(error>0) {
+                throw IllegalArgumentException("code block exceeds line length of $lineLength")            }
         }
 
         buf.appendln("```$type\n$c\n```\n")
@@ -65,13 +64,14 @@ class Kotlin4Example(
 
     fun mdLink(clazz: KClass<*>): String {
         return mdLink(
-            "`${clazz.simpleName!!}`",
-            "${repo.repoUrl}/tree/${repo.branch}/${sourcePathForClass(clazz)}"
+            title = "`${clazz.simpleName!!}`",
+            target = sourceRepository.urlForFile(sourcePathForClass(clazz))
+
         )
     }
 
     fun mdLinkToRepoResource(title: String, relativeUrl: String) =
-        mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/$relativeUrl")
+        mdLink(title, sourceRepository.repoUrl)
 
     fun snippetBlockFromClass(clazz: KClass<*>, snippetId: String) {
         val fileName = sourcePathForClass(clazz)
@@ -111,25 +111,18 @@ class Kotlin4Example(
         )
     }
 
-    /**
-     * Figure out the source file name for the class so we can grab code from it. Looks in the source paths.
-     */
-    private fun sourcePathForClass(clazz: KClass<*>) =
-        repo.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull() { it.exists() }?.path ?: throw IllegalArgumentException("source not found for ${clazz.qualifiedName}")
-
-    /**
-     * Figure out the (likely) file name for the class or inner class.
-     */
-    private fun fileName(clazz: KClass<*>) =
-        clazz.qualifiedName!!.replace("\\$.*?$".toRegex(), "").replace('.', File.separatorChar) + ".kt"
-
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
         val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
-        val path = repo.sourcePaths.map { File(it,fn) }.filter { it.exists() }.firstOrNull()?.path ?: throw IllegalStateException("file not found")
-        return mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/${path}")
+        val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path ?: throw IllegalStateException("file not found")
+        return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
     }
 
-    fun <T> block(runBlock: Boolean = false, block: () -> T) {
+    fun <T> block(runBlock: Boolean = false,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        block: () -> T) {
         val callerSourceBlock = getCallerSourceBlock()
         if (callerSourceBlock == null) {
             // we are assuming a few things about the caller source:
@@ -137,7 +130,13 @@ class Kotlin4Example(
             // - The source file must be in the sourcePaths
             logger.warn { "Could not find code block from stack trace and sourcePath" }
         } else {
-            mdCodeBlock(callerSourceBlock)
+            mdCodeBlock(
+                code = callerSourceBlock,
+                allowLongLines = allowLongLines,
+                type = type,
+                wrap = wrap,
+                lineLength = lineLength
+            )
         }
 
         if (runBlock) {
@@ -196,7 +195,7 @@ class Kotlin4Example(
         val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
 
-        val lines = repo.sourcePaths.map {File(it, sourceFile).absolutePath}
+        val lines = sourceRepository.sourcePaths.map {File(it, sourceFile).absolutePath}
             // the calculated fileName for the .class file does not match the source file for inner classes
             // so try to fix it by stripping the the Kt postfix
             .flatMap { listOf(it, it.replace("Kt.kt",".kt")) }
@@ -229,7 +228,7 @@ class Kotlin4Example(
         }
     }
 
-    fun sourceFileOfCaller(): String? {
+    private fun sourceFileOfCaller(): String? {
         val ste = getCallerStackTraceElement()
         val pathElements = ste.className.split('.')
         val relativeDir = pathElements.subList(0,pathElements.size-1).joinToString("${File.separatorChar}")
@@ -237,20 +236,20 @@ class Kotlin4Example(
 
     }
 
-    // internal fun sourceFileOfExampleCaller(): File? {
-    //     val ste = getCallerStackTraceElement()
-    //     println(ste.fileName)
-    //     val pathElements = ste.className.split('.')
-    //     val relativeDir = pathElements.subList(0,pathElements.size-1).joinToString("${File.separatorChar}")
-    //     println(relativeDir)
-    //     val fileName = (ste.className.replace("\\$.*?$".toRegex(), "").replace(
-    //         '.',
-    //         File.separatorChar
-    //     ) + ".kt").replace("Kt.kt",".kt")
-    //     return repo.sourcePaths.map { File(it, fileName) }.firstOrNull { it.exists() }
-    // }
+    /**
+     * Figure out the source file name for the class so we can grab code from it. Looks in the source paths.
+     */
+    private fun sourcePathForClass(clazz: KClass<*>) =
+        sourceRepository.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull() { it.exists() }?.path ?: throw IllegalArgumentException("source not found for ${clazz.qualifiedName}")
 
-    internal fun getCallerStackTraceElement(): StackTraceElement {
+    /**
+     * Figure out the (likely) file name for the class or inner class.
+     */
+    private fun fileName(clazz: KClass<*>) =
+        clazz.qualifiedName!!.replace("\\$.*?$".toRegex(), "").replace('.', File.separatorChar) + ".kt"
+
+
+    private fun getCallerStackTraceElement(): StackTraceElement {
         return Thread.currentThread()
             .stackTrace.first {
                 !it.className.startsWith("java") &&
@@ -267,10 +266,10 @@ class Kotlin4Example(
 
     companion object {
         fun markdown(
-            repo: Repo,
+            sourceRepository: SourceRepository,
             block: Kotlin4Example.() -> Unit
         ): String {
-            val example = Kotlin4Example(repo)
+            val example = Kotlin4Example(sourceRepository)
             example.use(block)
             return example.buf.toString()
         }
