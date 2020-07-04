@@ -125,7 +125,8 @@ class Kotlin4Example(
 
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
         val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
-        return mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/${fn}")
+        val path = repo.sourcePaths.map { File(it,fn) }.filter { it.exists() }.firstOrNull()?.path ?: throw IllegalStateException("file not found")
+        return mdLink(title, "${repo.repoUrl}/tree/${repo.branch}/${path}")
     }
 
     fun <T> block(runBlock: Boolean = false, block: () -> T) {

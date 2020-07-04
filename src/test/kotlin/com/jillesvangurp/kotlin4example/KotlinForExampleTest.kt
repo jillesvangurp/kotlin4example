@@ -1,5 +1,6 @@
 package com.jillesvangurp.kotlin4example
 
+import com.jillesvangurp.kotlin4example.docs.readme
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
@@ -13,6 +14,7 @@ val testDocOutsideClass by repo.md {
         // should contain BarFoo from this comment
         println("Hello" + " World!")
     }
+    +"${mdLinkToSelf()}"
     // and the output of the println
 }
 
@@ -22,6 +24,11 @@ class KotlinForExampleTest {
         testDocOutsideClass shouldNotContain "FooBar"
         testDocOutsideClass shouldContain "BarFoo"
         testDocOutsideClass shouldContain "Hello World!" // it should have captured the output of println this
+    }
+
+    @Test
+    fun `link to self should be correct`() {
+        testDocOutsideClass shouldContain "https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/KotlinForExampleTest.kt"
     }
 
     @Test
