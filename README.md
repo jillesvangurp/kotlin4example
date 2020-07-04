@@ -1,5 +1,8 @@
 # Kotlin4Example
 
+[![](https://jitpack.io/v/jillesvangurp/kotlin4example.svg)](https://jitpack.io/#jillesvangurp/kotlin4example)
+[![Actions Status](https://github.com/jillesvangurp/kotlin4example/workflows/CI-gradle-build/badge.svg)](https://github.com/jillesvangurp/kotlin4example/actions)
+
 Kotlin4Example is a project that I wrote to solve a recurring problem: I have a bunch of kotlin projects
 on Github that I would like to document properly. There are some tools for grabbing snippets of code
 from source files and templating markdown files. Usually this works by putting some strings in comments in 
