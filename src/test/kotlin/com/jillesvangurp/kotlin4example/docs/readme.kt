@@ -5,36 +5,59 @@ import com.jillesvangurp.kotlin4example.SourceRepository
 val k4ERepo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
 val readme by k4ERepo.md {
-    +"""
-        
+    +""" 
         [![](https://jitpack.io/v/jillesvangurp/kotlin4example.svg)](https://jitpack.io/#jillesvangurp/kotlin4example)
         [![Actions Status](https://github.com/jillesvangurp/kotlin4example/workflows/CI-gradle-build/badge.svg)](https://github.com/jillesvangurp/kotlin4example/actions)
         
-        Kotlin4Example is a project that I wrote to solve a recurring problem: I have a bunch of kotlin projects
-        on Github that I would like to document properly. There are some tools for grabbing snippets of code
-        from source files and templating markdown files. Usually this works by putting some strings in comments in 
-        your code and using some tool to dig out code snippets from the source code. 
-
-        There's nothing wrong with that approach. However, I wanted more. I want to actually run the snippets, 
-        grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal
-        with keeping track of snippet ids, their code comments, etc.
-        
-        So, I wrote a little kotlin framework to do this for me and used it to document a project. Over time, it
-        gained a critical mass of features and convenience and I sat down to clean up the code base, add tests, etc.
+        This projeect is an attempt at implementing 
+        ${com.jillesvangurp.kotlin4example.mdLink(
+        "literate programming",
+        "https://en.wikipedia.org/wiki/Literate_programming"
+        )} in Kotlin. 
+    
+        When I 
+        started writing documentation for my [Kotlin Client for Elasticsearch](https://github.com/jillesvangurp/es-kotlin-wrapper-client), 
+        I quickly discovered that copying bits of source code to quickly leads to broken
+        or inaccurate documentation samples. I fixed it by hacking together a solution to grab code samples
+        from Kotlin through reflection and by making some assumptions about where source files are in a typical
+        gradle project.
+    
+        There are other tools that solve this problem. Usually this works by putting some strings in comments in 
+        your code and using some tool to dig out code snippets from the source code. Kotlin4example actually also 
+        supports this.
+    
+        And there's of course nothing wrong with that approach. However, I wanted more. I wanted to actually run the snippets, 
+        be able to grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal
+        with keeping track of snippet ids, their code comments, etc. Instead I wanted to mix code and documentation and
+        be able to refactor both code and documentation easily.
         
         ## How Does it work?
         
         Kotlin has multi line strings, templating, and some built in constructions for creating your own DSLs. So, I
-        created a simple DSL that generates markdown by concatenating strings or executable blocks. The executable 
-        blocks as markdown source code blocks. We can also execute grab the output (optional). 
-        
-        This works by looking at the stacktrace and figuring out the path to the source file, the line of code 
-        and figuring out the beginning and end of the block. 
+        created a simple Kotlin DSL that generates markdown by concatenating strings (with Markdown) and executable 
+        kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block.
+        So, the block figures the source file it is in and the exact line it starts at and we grab exactly those lines 
+        and turn them into a markdown code block. We can also grab the output (optional).
         
         ## Example
+    
+        This README.md is actually created from kotlin code that runs as part of the test suite. You can look at the 
+        kotlin source code that generates this markdown ${mdLinkToSelf("here")}.
+        
+        Here's a Hello World example. I'll need to do a little documentation inception here to document how I 
+        would document this.
+    """
 
-        Here's a Hello World example:
+    block {
+        // documentation inception
+        // this is technically a block within a block, just so I can show you
+        blockWithOutput {
+            println("Hello World")
+        }
+    }
 
+    +"""
+        Becomes this:
     """
 
     blockWithOutput {
@@ -42,14 +65,26 @@ val readme by k4ERepo.md {
     }
 
     +"""
-        As you can see, we indeed grabbed the output.
+        As you can see, we indeed grab the output. `blockWithOutput` actually runs as we create the markdown, 
+        we capture the output and we put it below the block. 
         
-        Check out the kotlin source code that generates this markdown ${mdLinkToSelf("here")}.
+        For more elaborate examples of using this library, checkout my 
+        [Kotlin Client for Elasticsearch](https://github.com/jillesvangurp/es-kotlin-wrapper-client) project. That 
+        project is where this project emerged from and all markdown in that project is generated by kotlin4example.
         
-        ## Development status
+        ## Development status & roadmap
         
-        This is still a work in progress but it's also the basis for documentation for a few projects I maintain.
+        This is still a work in progress but it's also the basis for documentation for a few projects I maintain.       
+        So, API stability is at this point important to me. Which means it should be fine for you as well. 
         
-        So, API stability is at this point important for me. Which means, it should be fine for you as well.
+        I'm planning to build this out over time with more useful features. My intention is not to replace markdown
+        with a Kotlin DSL. But at the same time, it's useful to generate e.g. markdown links with kotlin and have a
+        few other conveniences. Also, I'm thinking of eventually self publishing some of the documentation fpr my 
+        projects in epub form and have started experimenting with generating scripts to unleash pandoc on my 
+        generated markdown.
+        
+        Finally, most of the things you document are also the things you should be testing and there is an argument
+        to be made for turning this into a proper test framework. Projects like [kotest](https://github.com/kotest/kotest)
+        could be combined with this to accomplish that I guess.
     """
 }
