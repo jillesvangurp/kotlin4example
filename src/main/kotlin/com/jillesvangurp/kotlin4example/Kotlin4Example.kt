@@ -71,7 +71,7 @@ class Kotlin4Example(
     }
 
     fun mdLinkToRepoResource(title: String, relativeUrl: String) =
-        mdLink(title, sourceRepository.repoUrl)
+        mdLink(title, sourceRepository.repoUrl + relativeUrl)
 
     fun snippetBlockFromClass(clazz: KClass<*>, snippetId: String) {
         val fileName = sourcePathForClass(clazz)
@@ -190,7 +190,7 @@ class Kotlin4Example(
     }
 
     private fun getCallerSourceBlock(): String? {
-        val sourceFile = sourceFileOfCaller()
+        val sourceFile = sourceFileOfCaller() ?: throw IllegalStateException("cannot determine source file")
 
         val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
@@ -206,6 +206,7 @@ class Kotlin4Example(
             val source = lines.subList(line - 1, lines.size).joinToString("\n")
 
             val allBlocks = patternForBlock.findAll(source)
+            // FIXME this sometimes fails in a non reproducable way?
             val match = allBlocks.first()
             val start = match.range.last
             var openCount = 1
