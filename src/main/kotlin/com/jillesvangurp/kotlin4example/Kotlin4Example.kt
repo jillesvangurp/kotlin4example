@@ -51,8 +51,8 @@ class Kotlin4Example(
 
     operator fun String.unaryPlus() {
         println()
-        buf.appendln(this.trimIndent().trimMargin())
-        buf.appendln()
+        buf.appendLine(this.trimIndent().trimMargin())
+        buf.appendLine()
     }
 
     fun mdCodeBlock(
@@ -87,7 +87,7 @@ class Kotlin4Example(
             }
         }
 
-        buf.appendln("```$type\n$c\n```\n")
+        buf.appendLine("```$type\n$c\n```\n")
     }
 
     fun mdLink(clazz: KClass<*>): String {
@@ -197,7 +197,7 @@ class Kotlin4Example(
         if (runBlock) {
             val response = block.invoke(blockCapture)
             if (response !is Unit) {
-                buf.appendln("$returnValuePrefix\n")
+                buf.appendLine("$returnValuePrefix\n")
                 mdCodeBlock(response.toString(), type = "")
             }
         }
@@ -207,7 +207,7 @@ class Kotlin4Example(
             val output = blockCapture.output()
             blockCapture.reset()
             if (output.isNotBlank()) {
-                buf.appendln("$stdOutPrefix\n")
+                buf.appendLine("$stdOutPrefix\n")
                 mdCodeBlock(
                     code = output,
                     allowLongLines = allowLongLines,
