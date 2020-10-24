@@ -7,6 +7,7 @@ import mu.KotlinLogging
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintWriter
+import java.nio.charset.StandardCharsets
 import kotlin.reflect.KClass
 
 private val logger: KLogger = KotlinLogging.logger { }
@@ -14,7 +15,32 @@ private val logger: KLogger = KotlinLogging.logger { }
 fun mdLink(title: String, target: String) = "[$title]($target)"
 fun mdLink(page: Page) = mdLink(page.title, page.fileName)
 
-fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) = lazyOf(Kotlin4Example.markdown(sourceRepository,block))
+fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) =
+    lazyOf(Kotlin4Example.markdown(sourceRepository, block))
+
+class BlockOutputCapture()  {
+    private val byteArrayOutputStream = ByteArrayOutputStream()
+    private val printWriter = PrintWriter(byteArrayOutputStream)
+
+    fun print(message: Any?) {
+        printWriter.print(message)
+    }
+
+    fun println(message: Any?) {
+        printWriter.println(message)
+    }
+
+    fun output(): String {
+        printWriter.flush()
+        return byteArrayOutputStream.toString(StandardCharsets.UTF_8)
+    }
+
+    fun reset() {
+        printWriter.flush()
+        byteArrayOutputStream.reset()
+    }
+}
+
 
 class Kotlin4Example(
     private val sourceRepository: SourceRepository
@@ -24,6 +50,7 @@ class Kotlin4Example(
     private val patternForBlock = "block.*?\\{+".toRegex(RegexOption.MULTILINE)
 
     operator fun String.unaryPlus() {
+        println()
         buf.appendln(this.trimIndent().trimMargin())
         buf.appendln()
     }
@@ -45,18 +72,19 @@ class Kotlin4Example(
                 }
             }.joinToString("\n")
         }
-        if(!allowLongLines) {
-            var l=1
-            var error=0
+        if (!allowLongLines) {
+            var l = 1
+            var error = 0
             c.lines().forEach {
-                if(it.length > lineLength) {
+                if (it.length > lineLength) {
                     logger.warn { "code block contains lines longer than 80 characters at line $l:\n$it" }
                     error++
                 }
                 l++
             }
-            if(error>0) {
-                throw IllegalArgumentException("code block exceeds line length of $lineLength")            }
+            if (error > 0) {
+                throw IllegalArgumentException("code block exceeds line length of $lineLength")
+            }
         }
 
         buf.appendln("```$type\n$c\n```\n")
@@ -113,79 +141,81 @@ class Kotlin4Example(
 
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
         val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
-        val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path ?: throw IllegalStateException("file not found")
+        val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
+            ?: throw IllegalStateException("file not found")
         return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
     }
 
-    fun <T> block(runBlock: Boolean = false,
+    fun <T> block(
+        runBlock: Boolean = true,
         type: String = "kotlin",
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
+        printStdOut: Boolean = true,
+        stdOutPrefix: String = "Captured Output:",
+        returnValuePrefix: String = "->",
         lineLength: Int = 80,
-        block: () -> T) {
-        val callerSourceBlock = getCallerSourceBlock()
-        if (callerSourceBlock == null) {
-            // we are assuming a few things about the caller source:
-            // - MUST be a class with its own source file
-            // - The source file must be in the sourcePaths
-            logger.warn { "Could not find code block from stack trace and sourcePath" }
-        } else {
-            mdCodeBlock(
-                code = callerSourceBlock,
-                allowLongLines = allowLongLines,
-                type = type,
-                wrap = wrap,
-                lineLength = lineLength
-            )
-        }
-
-        if (runBlock) {
-            val response = block.invoke()
-
-            val returnValue = response.toString()
-            if (returnValue != "kotlin.Unit") {
-                buf.appendln("Produces:\n")
-                mdCodeBlock(returnValue, type = "")
-            }
-        }
+        block: BlockOutputCapture.() -> T
+    ) {
+        val state = BlockOutputCapture()
+        block(
+            allowLongLines = allowLongLines,
+            type = type,
+            wrap = wrap,
+            lineLength = lineLength,
+            runBlock = runBlock,
+            block = block,
+            blockCapture = state,
+            returnValuePrefix = returnValuePrefix,
+            printStdOut = printStdOut,
+            stdOutPrefix = stdOutPrefix
+        )
     }
 
-    fun blockWithOutput(
+    fun <T> block(
+        runBlock: Boolean = true,
+        type: String = "kotlin",
         allowLongLines: Boolean = false,
-        allowLongLinesInOutput: Boolean = false,
         wrap: Boolean = false,
-        wrapOutput: Boolean = false,
+        printStdOut: Boolean = true,
+        stdOutPrefix: String = "Captured Output:",
+        returnValuePrefix: String = "->",
         lineLength: Int = 80,
-        block: PrintWriter.() -> Unit
+        blockCapture: BlockOutputCapture,
+        block: BlockOutputCapture.() -> T
     ) {
-        val callerSourceBlock = getCallerSourceBlock()
+        val callerSourceBlock =
+            getCallerSourceBlock() ?: throw IllegalStateException("source block could not be extracted")
+        mdCodeBlock(
+            code = callerSourceBlock,
+            allowLongLines = allowLongLines,
+            type = type,
+            wrap = wrap,
+            lineLength = lineLength
+        )
 
-        val outputBuffer = ByteArrayOutputStream()
-        val writer = PrintWriter(outputBuffer.writer())
-        writer.use {
-            block.invoke(writer)
-            if (callerSourceBlock == null) {
-                logger.warn { "Could not find code block from stack trace and sourcePath" }
-            } else {
+        if (runBlock) {
+            val response = block.invoke(blockCapture)
+            if (response !is Unit) {
+                buf.appendln("$returnValuePrefix\n")
+                mdCodeBlock(response.toString(), type = "")
+            }
+        }
+
+        // if you have runBlock == false, no output can be produced
+        if (printStdOut && runBlock) {
+            val output = blockCapture.output()
+            blockCapture.reset()
+            if (output.isNotBlank()) {
+                buf.appendln("$stdOutPrefix\n")
                 mdCodeBlock(
-                    code = callerSourceBlock,
+                    code = output,
                     allowLongLines = allowLongLines,
+                    wrap = wrap,
                     lineLength = lineLength,
-                    wrap = wrap
+                    type = ""
                 )
             }
-            writer.flush()
-        }
-        val output = outputBuffer.toString()
-        if (output.isNotEmpty()) {
-            buf.appendln("Output:\n")
-            mdCodeBlock(
-                code = output,
-                allowLongLines = allowLongLinesInOutput,
-                wrap = wrapOutput,
-                lineLength = lineLength,
-                type = ""
-            )
         }
     }
 
@@ -195,10 +225,10 @@ class Kotlin4Example(
         val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
 
-        val lines = sourceRepository.sourcePaths.map {File(it, sourceFile).absolutePath}
+        val lines = sourceRepository.sourcePaths.map { File(it, sourceFile).absolutePath }
             // the calculated fileName for the .class file does not match the source file for inner classes
             // so try to fix it by stripping the the Kt postfix
-            .flatMap { listOf(it, it.replace("Kt.kt",".kt")) }
+            .flatMap { listOf(it, it.replace("Kt.kt", ".kt")) }
             .map { File(it) }
             .firstOrNull { it.exists() }?.readLines()
         return if (lines != null && line > 0) {
@@ -232,23 +262,22 @@ class Kotlin4Example(
     private fun sourceFileOfCaller(): String? {
         val ste = getCallerStackTraceElement()
         val pathElements = ste.className.split('.')
-        val relativeDir = pathElements.subList(0,pathElements.size-1).joinToString("${File.separatorChar}")
+        val relativeDir = pathElements.subList(0, pathElements.size - 1).joinToString("${File.separatorChar}")
         return "$relativeDir${File.separatorChar}${ste.fileName}"
-
     }
 
     /**
      * Figure out the source file name for the class so we can grab code from it. Looks in the source paths.
      */
     private fun sourcePathForClass(clazz: KClass<*>) =
-        sourceRepository.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull() { it.exists() }?.path ?: throw IllegalArgumentException("source not found for ${clazz.qualifiedName}")
+        sourceRepository.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull() { it.exists() }?.path
+            ?: throw IllegalArgumentException("source not found for ${clazz.qualifiedName}")
 
     /**
      * Figure out the (likely) file name for the class or inner class.
      */
     private fun fileName(clazz: KClass<*>) =
         clazz.qualifiedName!!.replace("\\$.*?$".toRegex(), "").replace('.', File.separatorChar) + ".kt"
-
 
     private fun getCallerStackTraceElement(): StackTraceElement {
         return Thread.currentThread()

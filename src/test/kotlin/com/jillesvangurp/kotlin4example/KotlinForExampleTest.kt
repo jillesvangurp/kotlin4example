@@ -10,8 +10,8 @@ import kotlin.random.Random
 val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
 val testDocOutsideClass by repo.md {
-    // should not contain FooBar
-    blockWithOutput {
+    // should not contain FooBar because this comment is outside the block
+    block {
         // should contain BarFoo from this comment
         println("Hello" + " World!")
     }
@@ -22,8 +22,8 @@ val testDocOutsideClass by repo.md {
 class KotlinForExampleTest {
     @Test
     fun `should render markdown with code block outside class`() {
-        testDocOutsideClass shouldNotContain "FooBar"
-        testDocOutsideClass shouldContain "BarFoo"
+        testDocOutsideClass shouldNotContain "FooBar" // because in a comment outside the block
+        testDocOutsideClass shouldContain "BarFoo" // from the comment
         testDocOutsideClass shouldContain "Hello World!" // it should have captured the output of println this
     }
 
@@ -57,63 +57,37 @@ class KotlinForExampleTest {
     }
 
     @Test
-    fun `Example markdown`() {
-        val markdown = repo.md {
-            // we can inject arbitrary markdown, up to you
-
-            +"""
-                ## We can put some markdown in a string and include that
-
-                Some text with .
-                with multiple
-                   lines
-                   and some
-                        indentation
-                that we will try to trim responsibly.
-            """
-
-            +"""
-                ## Block with a return value
-
-                Here comes the magic. We find the source file, extract the block, and include that as a
-                markdown code block.
-
-                We also capture the return value of the block and print it.
-            """
-            blockWithOutput {
-                val aNumber = Random.nextInt(10)
-                if (aNumber > 10) {
-                    println("That would be unexpected")
-                } else {
-                    // block's return value is captured and printed
-                    println("Wow random works! We got: $aNumber")
-                }
-            }
-
-            +"""
-                ## Here's a block that returns unit
-
-                Not all examples have to return a value.
-            """
-
+    fun `capture return value`() {
+        repo.md {
             block {
-                // Unit is the return value of this block, don't print that
+                1+1
             }
+        }.value shouldContain "2"
+    }
 
-            +"""
-                ## We can also do blocks that take a buffered writer
-
-                Buffered writers have a print and println method.
-                So you can pretend to print to stdout and we capture the output
-
-            """
-            blockWithOutput {
-                // Obviously ...
-                println("Hello world")
+    @Test
+    fun `capture output from multiple blocks`() {
+        val out1 = repo.md {
+            block(printStdOut = false) {
+                print("hel")
+                print("lo")
             }
-        }
-        // what you do with the markdown is your problem. I'd suggest writing it to a file.
+        }.value
+        // if we disable printing nothing gets printed
+        out1 shouldNotContain "hello"
 
-        println(markdown)
+        val bo = BlockOutputCapture()
+        val out2 = repo.md {
+            block(printStdOut = false, blockCapture = bo) {
+                print("hel")
+                print("lo")
+            }
+            block(printStdOut = true, blockCapture = bo) {
+                println("world")
+            }
+        }.value
+        // but we can reuse the same block capture and print at the end
+        out2 shouldContain "hello"
+        out2 shouldContain "world"
     }
 }
