@@ -5,7 +5,6 @@ import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
-import kotlin.random.Random
 
 val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
