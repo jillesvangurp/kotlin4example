@@ -1,11 +1,11 @@
 plugins {
-    kotlin("jvm") version "1.3.72"
-    id("com.github.ben-manes.versions") version "0.28.0" // gradle dependencyUpdates -Drevision=release
+    kotlin("jvm") version "1.4.10"
+    id("com.github.ben-manes.versions") version "0.33.0" // gradle dependencyUpdates -Drevision=release
     `maven-publish`
 }
 
-val slf4jVersion = "1.7.26"
-val junitVersion = "5.6.2"
+val slf4jVersion = "1.7.30"
+val junitVersion = "5.7.0"
 
 group = "com.jillesvangurp"
 version = "1.0-SNAPSHOT"
@@ -16,11 +16,11 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    api("io.github.microutils:kotlin-logging:1.8.0.1")
+    api("io.github.microutils:kotlin-logging:2.0.3")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-    testImplementation("io.kotest:kotest-assertions-core-jvm:4.1.1")
+    testImplementation("io.kotest:kotest-assertions-core:4.3.0")
 
     // setup logging
     testImplementation("org.slf4j:slf4j-api:$slf4jVersion")
@@ -34,10 +34,10 @@ dependencies {
 
 tasks {
     compileKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
     compileTestKotlin {
-        kotlinOptions.jvmTarget = "1.8"
+        kotlinOptions.jvmTarget = "11"
     }
 }
 
