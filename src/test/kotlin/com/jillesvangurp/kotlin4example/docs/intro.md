@@ -17,7 +17,7 @@ supports this.
     
 And there's of course nothing wrong with that approach. However, I wanted more. I wanted to actually run the snippets, 
 be able to grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal
-with keeping track of snippet ids, their code comments, etc. Instead I wanted to mix code and documentation and
+with keeping track of snippet ids, their code comments, etc. Instead, I wanted to mix code and documentation and
 be able to refactor both code and documentation easily.
 
 ## How Does it work?
@@ -29,9 +29,6 @@ So, the block figures out the source file it is in and the exact line it starts 
 and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
 
 ## Example
-    
-This README.md is actually created from kotlin code that runs as part of the test suite. You can look at the 
-kotlin source code that generates this markdown ${mdLinkToSelf("here")}.
 
 Here's a Hello World example. I'll need to do a little documentation inception here to document how I 
 would document this.

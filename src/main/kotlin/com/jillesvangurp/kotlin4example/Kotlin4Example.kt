@@ -120,7 +120,8 @@ class Kotlin4Example(
         lineLength: Int = 80
     ) {
         val snippetLines = mutableListOf<String>()
-        val lines = File(fileName).readLines()
+
+        val lines = File(sourceRepository.sourcePaths.map { File(it, fileName) }.firstOrNull() { it.exists() }?.path ?: fileName).readLines()
         var inSnippet = false
         for (line in lines) {
             if (inSnippet && line.contains(snippetId)) {
