@@ -53,6 +53,18 @@ class Kotlin4Example(
         buf.appendLine()
     }
 
+    fun section(title: String, block: (Kotlin4Example.() -> Unit)? = null)  {
+        buf.appendLine("## $title")
+        buf.appendLine()
+        block?.invoke(this)
+    }
+
+    fun subSection(title: String, block: (Kotlin4Example.() -> Unit)? = null)  {
+        buf.appendLine("### $title")
+        buf.appendLine()
+        block?.invoke(this)
+    }
+
     fun mdCodeBlock(
         code: String,
         type: String = "kotlin",
@@ -93,6 +105,7 @@ class Kotlin4Example(
         val file = "$dir${File.separatorChar}$name"
         val markDown = findContentInSourceFiles(file)?.joinToString("\n") ?: error("no such file $file")
         buf.append(markDown)
+        buf.appendLine()
         buf.appendLine()
     }
 

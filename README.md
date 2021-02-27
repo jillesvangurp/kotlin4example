@@ -32,8 +32,6 @@ and turn them into a markdown code block. We can also grab the output (optional)
 
 ## Example
 
-Here's a Hello World example. I'll need to do a little documentation inception here to document how I 
-would document this.
 ```kotlin
 // documentation inception
 // this is technically a block within a block, just so I can show you
@@ -67,7 +65,7 @@ If you look at the source code for the readme, you will see we used
 We can also return a value from the block and capture that:
 
 ```kotlin
-fun aFunctionThatReturnsAnInt() = 1+1
+fun aFunctionThatReturnsAnInt() = 1 + 1
 
 // call the function to make the block return something
 aFunctionThatReturnsAnInt()
@@ -93,63 +91,68 @@ val readme by k4ERepo.md {
   // for larger bits of text, it's nice to load them from a markdown file
   includeMdFile("intro.md")
 
-  block(runBlock = false) {
-    // documentation inception
-    // this is technically a block within a block, just so I can show you
-    // how you would use it.
+  section("Example") {
+    block(runBlock = false) {
+      // documentation inception
+      // this is technically a block within a block, just so I can show you
+      // how you would use it.
+      block {
+        println("Hello World")
+      }
+    }
+    // but of course you can inline a Kotlin multiline string with some markdown
+    +"""
+      Here's the same block as above running as part of this 
+      ${mdLinkToSelf("readme.kt")} file.
+    """
+
     block {
       println("Hello World")
     }
-  }
-  // but of course you can inline a Kotlin multiline string with some markdown
-  +"""
-    Here's the same block as above running as part of this 
-    ${mdLinkToSelf("readme.kt")} file.
-  """
 
-  block {
-    println("Hello World")
-  }
+    +"""
+      As you can see, we indeed show a pretty printed block, ran it, and
+      grabbed the output. Observant readers will also note that the nested 
+      block above did not run. The reason for this is that the outer `block` 
+      call for that has a parameter that you can use to prevent this. 
+      If you look at the source code for the readme, you will see we used 
+      `block(runBlock = false)`
+      
+      We can also return a value from the block and capture that:
+    """
 
-  +"""
-    As you can see, we indeed show a pretty printed block, ran it, and
-    grabbed the output. Observant readers will also note that the nested 
-    block above did not run. The reason for this is that the outer `block` 
-    call for that has a parameter that you can use to prevent this. 
-    If you look at the source code for the readme, you will see we used 
-    `block(runBlock = false)`
-    
-    We can also return a value from the block and capture that:
-  """
+    block {
+      fun aFunctionThatReturnsAnInt() = 1 + 1
 
-  block {
-    fun aFunctionThatReturnsAnInt() = 1+1
+      // call the function to make the block return something
+      aFunctionThatReturnsAnInt()
+    }
 
-    // call the function to make the block return something
-    aFunctionThatReturnsAnInt()
+    +"""
+      Note how that captured the return value and printed that 
+      without us using `print` or `println`.
+    """
+
   }
 
-  +"""
-    Note how that captured the return value and printed that 
-    without us using `print` or `println`.
-  """
+  section("This README is generated") {
+    +"""
+      This README.md is actually created from kotlin code that 
+      runs as part of the test suite. You can look at the kotlin 
+      source code that generates this markdown ${mdLinkToSelf("here")}.
+    """.trimIndent()
 
-  +"""
-    ## This README is generated
-    
-    This README.md is actually created from kotlin code that 
-    runs as part of the test suite. You can look at the kotlin 
-    source code that generates this markdown ${mdLinkToSelf("here")}.
-  """.trimIndent()
+    // little hack so it will read until the end marker
+    snippetFromSourceFile(
+      "com/jillesvangurp/kotlin4example/docs/readme.kt",
+      "README" + "CODE"
+    )
 
-  // little hack so it will read until the end marker
-  snippetFromSourceFile("com/jillesvangurp/kotlin4example/docs/readme.kt",
-    "README"+"CODE")
-
-  """
-    And the code that actually writes the file is a test:
-  """.trimIndent()
-  snippetBlockFromClass(DocGenTest::class, "READMEWRITE")
+    """
+      And the code that actually writes the file is a test:
+    """.trimIndent()
+    snippetBlockFromClass(DocGenTest::class, "READMEWRITE")
+  }
 
   includeMdFile("outro.md")
 }
@@ -181,3 +184,4 @@ generated markdown.
 Finally, most of the things you document are also the things you should be testing and there is an argument
 to be made for turning this into a proper test framework. Projects like [kotest](https://github.com/kotest/kotest)
 could be combined with this to accomplish that I guess.
+

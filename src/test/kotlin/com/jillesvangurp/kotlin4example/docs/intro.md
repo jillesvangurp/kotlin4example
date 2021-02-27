@@ -27,8 +27,3 @@ created a simple Kotlin DSL that generates markdown by concatenating strings (wi
 kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block.
 So, the block figures out the source file it is in and the exact line it starts at and we grab exactly those lines 
 and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
-
-## Example
-
-Here's a Hello World example. I'll need to do a little documentation inception here to document how I 
-would document this.
