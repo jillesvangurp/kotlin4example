@@ -5,7 +5,7 @@ import com.jillesvangurp.kotlin4example.SourceRepository
 
 val k4ERepo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
-// READMESTART
+// READMECODESTART
 val readme by k4ERepo.md {
     // for larger bits of text, it's nice to load them from a markdown file
     includeMdFile("intro.md")
@@ -59,7 +59,9 @@ val readme by k4ERepo.md {
         source code that generates this markdown ${mdLinkToSelf("here")}.
     """.trimIndent()
 
-    snippetFromSourceFile("com/jillesvangurp/kotlin4example/docs/readme.kt","README")
+    // little hack so it will read until the end marker
+    snippetFromSourceFile("com/jillesvangurp/kotlin4example/docs/readme.kt",
+        "README"+"CODE")
 
     """
         And the code that actually writes the file is a test:
@@ -68,4 +70,6 @@ val readme by k4ERepo.md {
 
     includeMdFile("outro.md")
 }
-// READMEEND
+// READMECODEEND
+
+

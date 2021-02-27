@@ -135,6 +135,24 @@ val readme by k4ERepo.md {
   """
 
   +"""
+    ## This README is generated
+    
+    This README.md is actually created from kotlin code that 
+    runs as part of the test suite. You can look at the kotlin 
+    source code that generates this markdown ${mdLinkToSelf("here")}.
+  """.trimIndent()
+
+  // little hack so it will read until the end marker
+  snippetFromSourceFile("com/jillesvangurp/kotlin4example/docs/readme.kt",
+    "README"+"CODE")
+
+  """
+    And the code that actually writes the file is a test:
+  """.trimIndent()
+  snippetBlockFromClass(DocGenTest::class, "READMEWRITE")
+
+  includeMdFile("outro.md")
+}
 ```
 
 ```kotlin
