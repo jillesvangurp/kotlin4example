@@ -7,7 +7,6 @@ import mu.KotlinLogging
 import java.io.ByteArrayOutputStream
 import java.io.File
 import java.io.PrintWriter
-import java.nio.charset.StandardCharsets
 import kotlin.reflect.KClass
 
 private val logger: KLogger = KotlinLogging.logger { }
@@ -18,7 +17,7 @@ fun mdLink(page: Page) = mdLink(page.title, page.fileName)
 fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) =
     lazyOf(Kotlin4Example.markdown(sourceRepository, block))
 
-class BlockOutputCapture()  {
+class BlockOutputCapture() {
     private val byteArrayOutputStream = ByteArrayOutputStream()
     private val printWriter = PrintWriter(byteArrayOutputStream)
 
@@ -50,7 +49,6 @@ class Kotlin4Example(
     private val patternForBlock = "block.*?\\{+".toRegex(RegexOption.MULTILINE)
 
     operator fun String.unaryPlus() {
-        println()
         buf.appendLine(this.trimIndent().trimMargin())
         buf.appendLine()
     }
@@ -88,6 +86,14 @@ class Kotlin4Example(
         }
 
         buf.appendLine("```$type\n$c\n```\n")
+    }
+
+    fun includeMdFile(name: String) {
+        val dir = sourceDirOfCaller() ?: error("could not figure out directory of source file")
+        val file = "$dir${File.separatorChar}$name"
+        val markDown = findContentInSourceFiles(file)?.joinToString("\n") ?: error("no such file $file")
+        buf.append(markDown)
+        buf.appendLine()
     }
 
     fun mdLink(clazz: KClass<*>): String {
@@ -219,18 +225,23 @@ class Kotlin4Example(
         }
     }
 
+    private fun findContentInSourceFiles(sourceFile: String) =
+        sourceRepository.sourcePaths.map { File(it, sourceFile).absolutePath }
+            // the calculated fileName for the .class file does not match the source file for inner classes
+            // so try to fix it by stripping the the Kt postfix
+            .flatMap { listOf(it, it.replace("Kt.kt", ".kt")) }
+            .map { File(it) }
+            .firstOrNull { it.exists() }?.readLines()
+
+
     private fun getCallerSourceBlock(): String? {
         val sourceFile = sourceFileOfCaller() ?: throw IllegalStateException("cannot determine source file")
 
         val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
 
-        val lines = sourceRepository.sourcePaths.map { File(it, sourceFile).absolutePath }
-            // the calculated fileName for the .class file does not match the source file for inner classes
-            // so try to fix it by stripping the the Kt postfix
-            .flatMap { listOf(it, it.replace("Kt.kt", ".kt")) }
-            .map { File(it) }
-            .firstOrNull { it.exists() }?.readLines()
+        val lines = findContentInSourceFiles(sourceFile)
+
         return if (lines != null && line > 0) {
             // off by one error. Line numbers start at 1; list numbers start at 0
             val source = lines.subList(line - 1, lines.size).joinToString("\n")
@@ -266,6 +277,12 @@ class Kotlin4Example(
         return "$relativeDir${File.separatorChar}${ste.fileName}"
     }
 
+    private fun sourceDirOfCaller(): String? {
+        val ste = getCallerStackTraceElement()
+        val pathElements = ste.className.split('.')
+        return pathElements.subList(0, pathElements.size - 1).joinToString("${File.separatorChar}")
+    }
+
     /**
      * Figure out the source file name for the class so we can grab code from it. Looks in the source paths.
      */
@@ -283,11 +300,11 @@ class Kotlin4Example(
         return Thread.currentThread()
             .stackTrace.first {
                 !it.className.startsWith("java") &&
-                    !it.className.startsWith("jdk.internal") &&
-                    it.className != javaClass.name &&
-                    it.className != "java.lang.Thread" &&
-                    it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample" &&
-                    it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample\$Companion" // edge case
+                        !it.className.startsWith("jdk.internal") &&
+                        it.className != javaClass.name &&
+                        it.className != "java.lang.Thread" &&
+                        it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample" &&
+                        it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample\$Companion" // edge case
             }
     }
 
