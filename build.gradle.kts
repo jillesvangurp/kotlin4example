@@ -41,6 +41,18 @@ tasks {
     }
 }
 
+tasks.withType<Test> {
+    useJUnitPlatform()
+    testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
+    testLogging.events = setOf(
+        org.gradle.api.tasks.testing.logging.TestLogEvent.FAILED,
+        org.gradle.api.tasks.testing.logging.TestLogEvent.PASSED,
+        org.gradle.api.tasks.testing.logging.TestLogEvent.SKIPPED,
+        org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_ERROR,
+        org.gradle.api.tasks.testing.logging.TestLogEvent.STANDARD_OUT
+    )
+}
+
 val artifactName = "kotlin4example"
 val artifactGroup = "com.github.jillesvangurp"
 
