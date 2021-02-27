@@ -1,14 +1,9 @@
 [![](https://jitpack.io/v/jillesvangurp/kotlin4example.svg)](https://jitpack.io/#jillesvangurp/kotlin4example)
 [![Actions Status](https://github.com/jillesvangurp/kotlin4example/workflows/CI-gradle-build/badge.svg)](https://github.com/jillesvangurp/kotlin4example/actions)
 
-This project is an attempt at implementing 
-${com.jillesvangurp.kotlin4example.mdLink(
-"literate programming",
-"https://en.wikipedia.org/wiki/Literate_programming"
-)} in Kotlin. 
+This project is an attempt at implementing [literate programming](https://en.wikipedia.org/wiki/Literate_programming) in Kotlin. 
     
-When I started writing documentation for my [Kotlin Client for Elasticsearch](https://github.com/jillesvangurp/es-kotlin-wrapper-client), 
-I quickly discovered that copying bits of source code to quickly leads to broken
+When I started writing documentation for my [Kotlin Client for Elasticsearch](https://githubcom/jillesvangurp/es-kotlin-wrapper-client), I quickly discovered that copying bits of source code to quickly leads to broken
 or inaccurate documentation samples. Having to constantly chase bugs and outdated code samples is a huge 
 obstacle to writing documentation.
 
