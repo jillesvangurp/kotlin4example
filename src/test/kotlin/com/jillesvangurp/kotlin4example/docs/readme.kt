@@ -35,11 +35,11 @@ val readme by k4ERepo.md {
 
         +"""
             As you can see, we indeed show a pretty printed block, ran it, and
-            grabbed the output as well. Observant readers will also note that the nested 
-            block above did not run. The reason for this is that the outer `block` 
-            call for that has a `runBlock` parameter that you can use to prevent this. 
-            If you look at the source code for the readme, you will see we used 
-            `block(runBlock = false)`
+            grabbed the output as well. Observant readers will also note that 
+            the nested block above did not run. The reason for this is that 
+            the outer `block` call for that has a `runBlock` parameter that 
+            you can use to prevent this. If you look at the source code 
+            for the readme, you will see we used `block(runBlock = false)`
             
             You can also return a value from the block and capture that:
         """
