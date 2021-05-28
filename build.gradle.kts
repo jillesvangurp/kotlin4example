@@ -1,6 +1,6 @@
 plugins {
-    kotlin("jvm") version "1.4.31"
-    id("com.github.ben-manes.versions") version "0.36.0" // gradle dependencyUpdates -Drevision=release
+    kotlin("jvm") version "1.5.10"
+    id("com.github.ben-manes.versions") version "0.39.0" // gradle dependencyUpdates -Drevision=release
     `maven-publish`
 }
 
@@ -16,11 +16,11 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    api("io.github.microutils:kotlin-logging:2.0.4")
+    api("io.github.microutils:kotlin-logging:2.0.6")
 
     testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
     testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-    testImplementation("io.kotest:kotest-assertions-core:4.4.1")
+    testImplementation("io.kotest:kotest-assertions-core:4.6.0")
 
     // setup logging
     testImplementation("org.slf4j:slf4j-api:$slf4jVersion")
