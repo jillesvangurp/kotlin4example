@@ -120,9 +120,30 @@ class Kotlin4Example(
     fun mdLinkToRepoResource(title: String, relativeUrl: String) =
         mdLink(title, sourceRepository.repoUrl + relativeUrl)
 
-    fun snippetBlockFromClass(clazz: KClass<*>, snippetId: String) {
+    fun mdLinkToSelf(title: String = "Link to this source file"): String {
+        val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
+        val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
+            ?: throw IllegalStateException("file not found")
+        return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
+    }
+
+    fun snippetBlockFromClass(
+        clazz: KClass<*>,
+        snippetId: String,
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        type: String = "kotlin"
+    ) {
         val fileName = sourcePathForClass(clazz)
-        snippetFromSourceFile(fileName, snippetId)
+        snippetFromSourceFile(
+            fileName = fileName,
+            snippetId = snippetId,
+            allowLongLines = allowLongLines,
+            wrap = wrap,
+            lineLength = lineLength,
+            type = type
+        )
     }
 
     fun snippetFromSourceFile(
@@ -130,7 +151,8 @@ class Kotlin4Example(
         snippetId: String,
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
-        lineLength: Int = 80
+        lineLength: Int = 80,
+        type: String = "kotlin"
     ) {
         val snippetLines = mutableListOf<String>()
 
@@ -153,17 +175,11 @@ class Kotlin4Example(
         }
         mdCodeBlock(
             snippetLines.joinToString("\n").trimIndent(),
+            type = type,
             allowLongLines = allowLongLines,
             wrap = wrap,
             lineLength = lineLength
         )
-    }
-
-    fun mdLinkToSelf(title: String = "Link to this source file"): String {
-        val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
-        val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
-            ?: throw IllegalStateException("file not found")
-        return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
     }
 
     fun <T> block(
