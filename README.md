@@ -22,17 +22,17 @@ repositories {
 
 ## Why another markdown snippet tool?
     
-When I started writing documentation for my [Kotlin Client for Elasticsearch](https://githubcom/jillesvangurp/es-kotlin-wrapper-client), I quickly discovered that copying bits of source code to quickly leads to broken or inaccurate documentation samples. Having to constantly chase bugs and outdated code samples is a huge obstacle to writing documentation.
+When I started writing documentation for my [Kotlin Client for Elasticsearch](https://githubcom/jillesvangurp/es-kotlin-wrapper-client), I quickly discovered that copying bits of source code quickly leads to broken or inaccurate documentation samples. Having to constantly chase bugs and outdated code samples is an obstacle to writing documentation.
 
 I fixed it by hacking together a solution to grab code samples from Kotlin through reflection and by making some assumptions about where source files are in a typical gradle project.
     
-There are other tools that solve this problem. Usually this works by putting some strings in comments in your code and using some tool to dig out code snippets from the source code. Kotlin4example actually also supports this.
-    
-And there's of course nothing wrong with that approach. However, I wanted more. I wanted to actually run the snippets, be able to grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal with keeping track of snippet ids, their code comments, etc. Instead, I wanted to mix code and documentation and be able to refactor both code and documentation easily.
+There are other tools that solve this problem. Usually this works by putting some strings in comments in your code and using some tool to dig out code snippets from the source code.
+     
+And there's of course nothing wrong with that approach and Kotlin4example actually also supports this. However, I wanted more. I wanted to actually run the snippets, be able to grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal with keeping track of snippet ids, their code comments, etc. Instead, I wanted to mix code and documentation and be able to refactor both code and documentation easily.
 
 ## How Does it work?
 
-Kotlin has multi line strings, templating, and some built in constructions for creating your own DSLs. So, I created a simple Kotlin DSL that generates markdown by concatenating strings (with Markdown) and executable kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block. So, the block figures out the source file it is in and the exact line it starts at and we grab exactly those lines and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
+Kotlin has multi line strings, templating, and some built in support for creating your own DSLs. So, I created a simple Kotlin DSL that generates markdown by concatenating strings (with Markdown) and executable kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block. So, the block figures out the source file it is in and the exact line it starts at and we grab exactly those lines and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
 
 ## Example
 
@@ -60,13 +60,13 @@ Hello World
 ```
 
 As you can see, we indeed show a pretty printed block, ran it, and
-grabbed the output. Observant readers will also note that the nested 
-block above did not run. The reason for this is that the outer `block` 
-call for that has a parameter that you can use to prevent this. 
-If you look at the source code for the readme, you will see we used 
-`block(runBlock = false)`
+grabbed the output as well. Observant readers will also note that 
+the nested block above did not run. The reason for this is that 
+the outer `block` call for that has a `runBlock` parameter that 
+you can use to prevent this. If you look at the source code 
+for the readme, you will see we used `block(runBlock = false)`
 
-We can also return a value from the block and capture that:
+You can also return a value from the block and capture that:
 
 ```kotlin
 fun aFunctionThatReturnsAnInt() = 1 + 1
@@ -104,7 +104,9 @@ val readme by k4ERepo.md {
         println("Hello World")
       }
     }
-    // but of course you can inline a Kotlin multiline string with some markdown
+    // of course you can inline a Kotlin multiline string with some markdown
+    // note the use of templating here and the helper function to generate
+    // a link
     +"""
       Here's the same block as above running as part of this 
       ${mdLinkToSelf("readme.kt")} file.
@@ -116,13 +118,13 @@ val readme by k4ERepo.md {
 
     +"""
       As you can see, we indeed show a pretty printed block, ran it, and
-      grabbed the output. Observant readers will also note that the nested 
-      block above did not run. The reason for this is that the outer `block` 
-      call for that has a parameter that you can use to prevent this. 
-      If you look at the source code for the readme, you will see we used 
-      `block(runBlock = false)`
+      grabbed the output as well. Observant readers will also note that 
+      the nested block above did not run. The reason for this is that 
+      the outer `block` call for that has a `runBlock` parameter that 
+      you can use to prevent this. If you look at the source code 
+      for the readme, you will see we used `block(runBlock = false)`
       
-      We can also return a value from the block and capture that:
+      You can also return a value from the block and capture that:
     """
 
     block {
@@ -146,7 +148,8 @@ val readme by k4ERepo.md {
       source code that generates this markdown ${mdLinkToSelf("here")}.
     """.trimIndent()
 
-    // little hack so it will read until the end marker
+    // little string concatenation hack so it will read 
+    // until the end marker instead of stopping here    
     snippetFromSourceFile(
       "com/jillesvangurp/kotlin4example/docs/readme.kt",
       "README" + "CODE"
