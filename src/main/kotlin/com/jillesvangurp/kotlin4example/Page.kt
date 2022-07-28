@@ -6,7 +6,7 @@ import java.io.File
 data class Page(
     val title: String,
     val outputDir: String = ".",
-    val fileName: String = "${title.toLowerCase().replace("""\s+""", "-")}.md"
+    val fileName: String = "${title.lowercase().replace("""\s+""", "-")}.md"
 ) {
     val file = File(outputDir,fileName)
 

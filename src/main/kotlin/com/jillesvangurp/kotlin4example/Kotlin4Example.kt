@@ -2,6 +2,7 @@
 
 package com.jillesvangurp.kotlin4example
 
+import kotlinx.coroutines.runBlocking
 import mu.KLogger
 import mu.KotlinLogging
 import java.io.ByteArrayOutputStream
@@ -232,6 +233,81 @@ class Kotlin4Example(
 
         if (runBlock) {
             val response = block.invoke(blockCapture)
+            if (response !is Unit) {
+                buf.appendLine("$returnValuePrefix\n")
+                mdCodeBlock(response.toString(), type = "")
+            }
+        }
+
+        // if you have runBlock == false, no output can be produced
+        if (printStdOut && runBlock) {
+            val output = blockCapture.output()
+            blockCapture.reset()
+            if (output.isNotBlank()) {
+                buf.appendLine("$stdOutPrefix\n")
+                mdCodeBlock(
+                    code = output,
+                    allowLongLines = allowLongLines,
+                    wrap = wrap,
+                    lineLength = lineLength,
+                    type = ""
+                )
+            }
+        }
+    }
+
+    fun <T> suspendingBlock(
+        runBlock: Boolean = true,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        printStdOut: Boolean = true,
+        stdOutPrefix: String = "Captured Output:",
+        returnValuePrefix: String = "->",
+        lineLength: Int = 80,
+        block: suspend BlockOutputCapture.() -> T
+    ) {
+        val state = BlockOutputCapture()
+        suspendingBlock(
+            allowLongLines = allowLongLines,
+            type = type,
+            wrap = wrap,
+            lineLength = lineLength,
+            runBlock = runBlock,
+            block = block,
+            blockCapture = state,
+            returnValuePrefix = returnValuePrefix,
+            printStdOut = printStdOut,
+            stdOutPrefix = stdOutPrefix
+        )
+    }
+    fun <T> suspendingBlock(
+        runBlock: Boolean = true,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        printStdOut: Boolean = true,
+        stdOutPrefix: String = "Captured Output:",
+        returnValuePrefix: String = "->",
+        lineLength: Int = 80,
+        blockCapture: BlockOutputCapture,
+        block: suspend BlockOutputCapture.() -> T
+    ) {
+        val callerSourceBlock =
+            getCallerSourceBlock() ?: throw IllegalStateException("source block could not be extracted")
+        mdCodeBlock(
+            code = callerSourceBlock,
+            allowLongLines = allowLongLines,
+            type = type,
+            wrap = wrap,
+            lineLength = lineLength
+        )
+
+        if (runBlock) {
+            val response = runBlocking {
+                block.invoke(blockCapture)
+            }
+
             if (response !is Unit) {
                 buf.appendLine("$returnValuePrefix\n")
                 mdCodeBlock(response.toString(), type = "")

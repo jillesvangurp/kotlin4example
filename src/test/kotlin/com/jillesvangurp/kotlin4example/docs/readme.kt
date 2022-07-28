@@ -54,8 +54,18 @@ val readme by k4ERepo.md {
         +"""
             Note how that captured the return value and printed that 
             without us using `print` or `println`.
+            
+            You can also use suspendingBlock if you use co-routines
         """
 
+        block(runBlock = false) {
+            suspend fun foo() {}
+
+            suspendingBlock {
+                // call some suspending logic
+                foo()
+            }
+        }
     }
 
     section("This README is generated") {
