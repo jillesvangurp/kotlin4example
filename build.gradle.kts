@@ -1,11 +1,7 @@
 plugins {
-    kotlin("jvm") version "1.5.10"
-    id("com.github.ben-manes.versions") version "0.39.0" // gradle dependencyUpdates -Drevision=release
+    kotlin("jvm")
     `maven-publish`
 }
-
-val slf4jVersion = "1.7.30"
-val junitVersion = "5.7.0"
 
 group = "com.jillesvangurp"
 version = "1.0-SNAPSHOT"
@@ -16,19 +12,20 @@ repositories {
 
 dependencies {
     implementation(kotlin("stdlib-jdk8"))
-    api("io.github.microutils:kotlin-logging:2.0.6")
+    api("io.github.microutils:kotlin-logging:_")
+    implementation(KotlinX.Coroutines.core)
 
-    testImplementation("org.junit.jupiter:junit-jupiter-api:$junitVersion")
-    testRuntimeOnly("org.junit.jupiter:junit-jupiter-engine:$junitVersion")
-    testImplementation("io.kotest:kotest-assertions-core:4.6.0")
+    testImplementation(Testing.junit.jupiter.api)
+    testRuntimeOnly(Testing.junit.jupiter.engine)
+    testImplementation(Testing.kotest.assertions.core)
 
     // setup logging
-    testImplementation("org.slf4j:slf4j-api:$slf4jVersion")
-    testImplementation("org.slf4j:jcl-over-slf4j:$slf4jVersion")
-    testImplementation("org.slf4j:log4j-over-slf4j:$slf4jVersion")
-    testImplementation("org.slf4j:jul-to-slf4j:$slf4jVersion")
-    testImplementation("org.apache.logging.log4j:log4j-to-slf4j:2.14.0") // es seems to insist on log4j2
-    testImplementation("ch.qos.logback:logback-classic:1.2.3")
+    testImplementation("org.slf4j:slf4j-api:_")
+    testImplementation("org.slf4j:jcl-over-slf4j:_")
+    testImplementation("org.slf4j:log4j-over-slf4j:_")
+    testImplementation("org.slf4j:jul-to-slf4j:_")
+    testImplementation("org.apache.logging.log4j:log4j-to-slf4j:_") // es seems to insist on log4j2
+    testImplementation("ch.qos.logback:logback-classic:_")
 
 }
 
