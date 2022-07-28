@@ -47,7 +47,7 @@ class Kotlin4Example(
 ) : AutoCloseable {
     private val buf = StringBuilder()
 
-    private val patternForBlock = "block.*?\\{+".toRegex(RegexOption.MULTILINE)
+    private val patternForBlock = "(suspendingBlock|block).*?\\{+".toRegex(RegexOption.MULTILINE)
 
     operator fun String.unaryPlus() {
         buf.appendLine(this.trimIndent().trimMargin())

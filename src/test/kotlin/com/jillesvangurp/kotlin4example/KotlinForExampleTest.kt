@@ -65,6 +65,15 @@ class KotlinForExampleTest {
     }
 
     @Test
+    fun `capture return value in suspendingBlock`() {
+        repo.md {
+            suspendingBlock {
+                1+1
+            }
+        }.value shouldContain "2"
+    }
+
+    @Test
     fun `capture output from multiple blocks`() {
         val out1 = repo.md {
             block(printStdOut = false) {
