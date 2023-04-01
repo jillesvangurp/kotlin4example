@@ -7,24 +7,16 @@ jobs:
     steps:
     - name: Checkout the code
       uses: actions/checkout@master
-    - name: Setup Java
-      uses: actions/setup-java@v1
+    - name: setup jdk
+      uses: actions/setup-java@v3
       with:
-        java-version: '13.0.1'
-    - name: Cache build .gradle dir
-      uses: actions/cache@v1
+        java-version: 17
+        distribution: adopt
+        java-package: jdk
+        architecture: x64
+        cache: gradle
+
+    - name: gradle build
+      uses: gradle/gradle-build-action@v2
       with:
-        path: .gradle
-        key: ${{ runner.os }}-gradle-${{ hashFiles('**/build.gradle.kts') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-    - name: Cache user .gradle dir
-      uses: actions/cache@v1
-      with:
-        path: ~/.gradle
-        key: ${{ runner.os }}-gradleuser-${{ hashFiles('**/build.gradle.kts') }}
-        restore-keys: |
-          ${{ runner.os }}-gradle-
-    - name: Gradle Build
-      run: ./gradlew build
-    
+        arguments: build --info
