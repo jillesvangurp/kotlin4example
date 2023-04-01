@@ -18,7 +18,7 @@ fun mdLink(page: Page) = mdLink(page.title, page.fileName)
 fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) =
     lazyOf(Kotlin4Example.markdown(sourceRepository, block))
 
-class BlockOutputCapture() {
+class BlockOutputCapture {
     private val byteArrayOutputStream = ByteArrayOutputStream()
     private val printWriter = PrintWriter(byteArrayOutputStream)
 
@@ -42,6 +42,7 @@ class BlockOutputCapture() {
 }
 
 
+@Suppress("MemberVisibilityCanBePrivate")
 class Kotlin4Example(
     private val sourceRepository: SourceRepository
 ) : AutoCloseable {
@@ -77,7 +78,7 @@ class Kotlin4Example(
         if (wrap) {
             c = c.lines().flatMap { line ->
                 if (line.length <= lineLength) {
-                    listOf<String>(line)
+                    listOf(line)
                 } else {
                     line.chunked(lineLength)
                 }
@@ -102,7 +103,7 @@ class Kotlin4Example(
     }
 
     fun includeMdFile(name: String) {
-        val dir = sourceDirOfCaller() ?: error("could not figure out directory of source file")
+        val dir = sourceDirOfCaller()
         val file = "$dir${File.separatorChar}$name"
         val markDown = findContentInSourceFiles(file)?.joinToString("\n") ?: error("no such file $file")
         buf.append(markDown)
@@ -122,7 +123,7 @@ class Kotlin4Example(
         mdLink(title, sourceRepository.repoUrl + relativeUrl)
 
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
-        val fn = this.sourceFileOfCaller() ?: throw IllegalStateException("source file not found")
+        val fn = this.sourceFileOfCaller()
         val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
             ?: throw IllegalStateException("file not found")
         return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
@@ -157,7 +158,7 @@ class Kotlin4Example(
     ) {
         val snippetLines = mutableListOf<String>()
 
-        val lines = File(sourceRepository.sourcePaths.map { File(it, fileName) }.firstOrNull() { it.exists() }?.path ?: fileName).readLines()
+        val lines = File(sourceRepository.sourcePaths.map { File(it, fileName) }.firstOrNull { it.exists() }?.path ?: fileName).readLines()
         var inSnippet = false
         for (line in lines) {
             if (inSnippet && line.contains(snippetId)) {
@@ -189,6 +190,7 @@ class Kotlin4Example(
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
         printStdOut: Boolean = true,
+        captureBlockReturnValue: Boolean = true,
         stdOutPrefix: String = "Captured Output:",
         returnValuePrefix: String = "->",
         lineLength: Int = 80,
@@ -205,6 +207,7 @@ class Kotlin4Example(
             blockCapture = state,
             returnValuePrefix = returnValuePrefix,
             printStdOut = printStdOut,
+            captureBlockReturnValue = captureBlockReturnValue,
             stdOutPrefix = stdOutPrefix
         )
     }
@@ -218,6 +221,7 @@ class Kotlin4Example(
         stdOutPrefix: String = "Captured Output:",
         returnValuePrefix: String = "->",
         lineLength: Int = 80,
+        captureBlockReturnValue: Boolean = true,
         blockCapture: BlockOutputCapture,
         block: BlockOutputCapture.() -> T
     ) {
@@ -234,8 +238,10 @@ class Kotlin4Example(
         if (runBlock) {
             val response = block.invoke(blockCapture)
             if (response !is Unit) {
-                buf.appendLine("$returnValuePrefix\n")
-                mdCodeBlock(response.toString(), type = "")
+                if(captureBlockReturnValue) {
+                    buf.appendLine("$returnValuePrefix\n")
+                    mdCodeBlock(response.toString(), type = "")
+                }
             }
         }
 
@@ -265,6 +271,7 @@ class Kotlin4Example(
         stdOutPrefix: String = "Captured Output:",
         returnValuePrefix: String = "->",
         lineLength: Int = 80,
+        captureBlockReturnValue: Boolean = true,
         block: suspend BlockOutputCapture.() -> T
     ) {
         val state = BlockOutputCapture()
@@ -278,6 +285,7 @@ class Kotlin4Example(
             blockCapture = state,
             returnValuePrefix = returnValuePrefix,
             printStdOut = printStdOut,
+            captureBlockReturnValue = captureBlockReturnValue,
             stdOutPrefix = stdOutPrefix
         )
     }
@@ -291,6 +299,7 @@ class Kotlin4Example(
         returnValuePrefix: String = "->",
         lineLength: Int = 80,
         blockCapture: BlockOutputCapture,
+        captureBlockReturnValue: Boolean = true,
         block: suspend BlockOutputCapture.() -> T
     ) {
         val callerSourceBlock =
@@ -308,7 +317,7 @@ class Kotlin4Example(
                 block.invoke(blockCapture)
             }
 
-            if (response !is Unit) {
+            if (response !is Unit && captureBlockReturnValue) {
                 buf.appendLine("$returnValuePrefix\n")
                 mdCodeBlock(response.toString(), type = "")
             }
@@ -334,14 +343,14 @@ class Kotlin4Example(
     private fun findContentInSourceFiles(sourceFile: String) =
         sourceRepository.sourcePaths.map { File(it, sourceFile).absolutePath }
             // the calculated fileName for the .class file does not match the source file for inner classes
-            // so try to fix it by stripping the the Kt postfix
+            // so try to fix it by stripping the Kt postfix
             .flatMap { listOf(it, it.replace("Kt.kt", ".kt")) }
             .map { File(it) }
             .firstOrNull { it.exists() }?.readLines()
 
 
     private fun getCallerSourceBlock(): String? {
-        val sourceFile = sourceFileOfCaller() ?: throw IllegalStateException("cannot determine source file")
+        val sourceFile = sourceFileOfCaller()
 
         val ste = getCallerStackTraceElement()
         val line = ste.lineNumber
@@ -349,11 +358,11 @@ class Kotlin4Example(
         val lines = findContentInSourceFiles(sourceFile)
 
         return if (lines != null && line > 0) {
-            // off by one error. Line numbers start at 1; list numbers start at 0
+            // Off by one error. Line numbers start at 1; list numbers start at 0
             val source = lines.subList(line - 1, lines.size).joinToString("\n")
 
             val allBlocks = patternForBlock.findAll(source)
-            // FIXME this sometimes fails in a non reproducable way?
+            // FIXME this sometimes fails in a non reproducible way?
             val match = allBlocks.first()
             val start = match.range.last
             var openCount = 1
@@ -376,24 +385,24 @@ class Kotlin4Example(
         }
     }
 
-    private fun sourceFileOfCaller(): String? {
+    private fun sourceFileOfCaller(): String {
         val ste = getCallerStackTraceElement()
         val pathElements = ste.className.split('.')
         val relativeDir = pathElements.subList(0, pathElements.size - 1).joinToString("${File.separatorChar}")
         return "$relativeDir${File.separatorChar}${ste.fileName}"
     }
 
-    private fun sourceDirOfCaller(): String? {
+    private fun sourceDirOfCaller(): String {
         val ste = getCallerStackTraceElement()
         val pathElements = ste.className.split('.')
         return pathElements.subList(0, pathElements.size - 1).joinToString("${File.separatorChar}")
     }
 
     /**
-     * Figure out the source file name for the class so we can grab code from it. Looks in the source paths.
+     * Figure out the source file name for the class, so we can grab code from it. Looks in the source paths.
      */
     private fun sourcePathForClass(clazz: KClass<*>) =
-        sourceRepository.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull() { it.exists() }?.path
+        sourceRepository.sourcePaths.map { File(it, fileName(clazz)) }.firstOrNull { it.exists() }?.path
             ?: throw IllegalArgumentException("source not found for ${clazz.qualifiedName}")
 
     /**
