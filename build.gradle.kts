@@ -29,15 +29,6 @@ dependencies {
 
 }
 
-tasks {
-    compileKotlin {
-        kotlinOptions.jvmTarget = "17"
-    }
-    compileTestKotlin {
-        kotlinOptions.jvmTarget = "17"
-    }
-}
-
 tasks.withType<Test> {
     useJUnitPlatform()
     testLogging.exceptionFormat = org.gradle.api.tasks.testing.logging.TestExceptionFormat.FULL
@@ -67,7 +58,7 @@ publishing {
     repositories {
         maven {
             name = "myRepo"
-            url = uri("file://$buildDir/repo")
+            url = uri("file://${layout.buildDirectory.asFile.get().path}/repo")
         }
     }
 }
