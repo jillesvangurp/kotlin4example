@@ -3,7 +3,14 @@
 [![](https://jitpack.io/v/jillesvangurp/kotlin4example.svg)](https://jitpack.io/#jillesvangurp/kotlin4example)
 [![Actions Status](https://github.com/jillesvangurp/kotlin4example/workflows/CI-gradle-build/badge.svg)](https://github.com/jillesvangurp/kotlin4example/actions)
 
-This project is an attempt at implementing [literate programming](https://en.wikipedia.org/wiki/Literate_programming) in Kotlin. 
+This project is an attempt at implementing [literate programming](https://en.wikipedia.org/wiki/Literate_programming) in Kotlin. Literate programming is useful
+for documenting projects. You mix working code and documentation. 
+
+The practice of copying code snippets to code blocks
+inside markdown files is very brittle and leads to code that easily breaks. This project
+solves this by generating the markdown from Kotlin with a simple DSL and provides
+you with the tools to construct examples from working code.
+
 
 ## Get it
 
@@ -22,17 +29,14 @@ repositories {
 
 ## Why another markdown snippet tool?
     
-When I started writing documentation for my [Kotlin Client for Elasticsearch](https://githubcom/jillesvangurp/es-kotlin-wrapper-client), I quickly discovered that copying bits of source code quickly leads to broken or inaccurate documentation samples. Having to constantly chase bugs and outdated code samples is an obstacle to writing documentation.
+When I started writing documentation for my [Kotlin Client for Elasticsearch](https://githubcom/jillesvangurp/es-kotlin-wrapper-client), I quickly discovered that keeping the 
+examples working was a big challenge. 
 
-I fixed it by hacking together a solution to grab code samples from Kotlin through reflection and by making some assumptions about where source files are in a typical gradle project.
+I fixed it by hacking together a solution to grab code samples from Kotlin through reflection and by making some assumptions about where source files are in a typical gradle project on github.
     
 There are other tools that solve this problem. Usually this works by putting some strings in comments in your code and using some tool to dig out code snippets from the source code.
      
 And there's of course nothing wrong with that approach and Kotlin4example actually also supports this. However, I wanted more. I wanted to actually run the snippets, be able to grab the output, and generate documentation using the Github flavor of markdown. Also, I did not want to deal with keeping track of snippet ids, their code comments, etc. Instead, I wanted to mix code and documentation and be able to refactor both code and documentation easily.
-
-## How Does it work?
-
-Kotlin has multi line strings, templating, and some built in support for creating your own DSLs. So, I created a simple Kotlin DSL that generates markdown by concatenating strings (with Markdown) and executable kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block. So, the block figures out the source file it is in and the exact line it starts at and we grab exactly those lines and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
 
 ## Usage
 
@@ -57,13 +61,13 @@ print("Hello World")
 This example prints **Hello World** when it executes. 
 
 ```kotlin
-  // out is an ExampleOutput instance
-  // with both stdout and the return
-  // value as a Result<T>. Any exceptions
-  // are captured as well.
-  val out = example {
-    print("Hello World")
-  }
+// out is an ExampleOutput instance
+// with both stdout and the return
+// value as a Result<T>. Any exceptions
+// are captured as well.
+val out = example {
+  print("Hello World")
+}
 // this is how you can append arbitrary markdown
 +"""
   This example prints **${out.stdOut}** when it executes. 
@@ -73,10 +77,6 @@ This example prints **Hello World** when it executes.
 ### Suspending examples
 
 If you use co-routines, you can use a suspendingExample
-
-```kotlin
-// call some suspending code
-```
 
 ```kotlin
 // runs the example in a runBlocking { .. }
@@ -169,13 +169,13 @@ val readmeMarkdown by k4ERepo.md {
 
       // a bit of kotlin4example inception here, but it works
 example {
-  // out is an ExampleOutput instance
-  // with both stdout and the return
-  // value as a Result<T>. Any exceptions
-  // are captured as well.
-  val out = example {
-    print("Hello World")
-  }
+// out is an ExampleOutput instance
+// with both stdout and the return
+// value as a Result<T>. Any exceptions
+// are captured as well.
+val out = example {
+  print("Hello World")
+}
 // this is how you can append arbitrary markdown
 +"""
   This example prints **${out.stdOut}** when it executes. 
@@ -185,7 +185,7 @@ example {
     subSection("Suspending examples") {
       +"If you use co-routines, you can use a suspendingExample"
 
-      example {
+      example(runExample = false) {
         // runs the example in a runBlocking { .. }
         suspendingExample {
           // call some suspending code
@@ -289,21 +289,7 @@ class DocGenTest {
 ```
 
 For more elaborate examples of using this library, checkout my 
-[Kotlin Client for Elasticsearch](https://github.com/jillesvangurp/es-kotlin-wrapper-client) project. That 
+[kt-search](https://github.com/jillesvangurp/kt-search) project. That 
 project is where this project emerged from and all markdown in that project is generated by kotlin4example.
 
-## Development status & roadmap
-
-This is still a work in progress but it's also the basis for documentation for a few projects I maintain.       
-So, API stability is at this point getting more important to me. Which means it should be fine for you as well. 
-
-I'm planning to build this out over time with more useful features. My intention is not to replace markdown
-with a Kotlin DSL. But instead to generate e.g. markdown links with kotlin and have a
-few other conveniences. Also, I'm thinking of eventually self publishing some of the documentation for my 
-projects in epub form and have started experimenting with generating scripts to unleash pandoc on my 
-generated markdown.
-
-Finally, most of the things you document are also the things you should be testing and there is an argument
-to be made for turning this into a proper test framework. Projects like [kotest](https://github.com/kotest/kotest)
-could be combined with this to accomplish that I guess.
 

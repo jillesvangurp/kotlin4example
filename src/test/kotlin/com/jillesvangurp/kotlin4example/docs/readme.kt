@@ -30,13 +30,13 @@ val readmeMarkdown by k4ERepo.md {
 
             // a bit of kotlin4example inception here, but it works
 example {
-    // out is an ExampleOutput instance
-    // with both stdout and the return
-    // value as a Result<T>. Any exceptions
-    // are captured as well.
-    val out = example {
-        print("Hello World")
-    }
+// out is an ExampleOutput instance
+// with both stdout and the return
+// value as a Result<T>. Any exceptions
+// are captured as well.
+val out = example {
+    print("Hello World")
+}
 // this is how you can append arbitrary markdown
 +"""
     This example prints **${out.stdOut}** when it executes. 
@@ -46,7 +46,7 @@ example {
         subSection("Suspending examples") {
             +"If you use co-routines, you can use a suspendingExample"
 
-            example {
+            example(runExample = false) {
                 // runs the example in a runBlocking { .. }
                 suspendingExample {
                     // call some suspending code
