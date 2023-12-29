@@ -34,152 +34,240 @@ And there's of course nothing wrong with that approach and Kotlin4example actual
 
 Kotlin has multi line strings, templating, and some built in support for creating your own DSLs. So, I created a simple Kotlin DSL that generates markdown by concatenating strings (with Markdown) and executable kotlin blocks. The executable blocks basically contain the source code I want to show in a Markdown code block. So, the block figures out the source file it is in and the exact line it starts at and we grab exactly those lines and turn them into a markdown code block. We can also grab the output (optional) when it runs and can grab that.
 
-## Example
+## Usage
+
+### Example blocks
+
+With Kotlin4Example you can mix examples and markdown easily. 
+An example is a code block
+and it is executed by default. Because it is a code block,
+ you are forced to ensure
+it is syntactically correct and compiles. 
+
+By executing it, you can further guarantee it does what it 
+is supposed to and you can
+intercept output and integrate that into your documentation.
+
+For example:
 
 ```kotlin
-// documentation inception
-// this is technically a block within a block, just so I can show you
-// how you would use it.
-block {
-  println("Hello World")
+print("Hello World")
+```
+
+This example prints **Hello World** when it executes. 
+
+```kotlin
+  // out is an ExampleOutput instance
+  // with both stdout and the return
+  // value as a Result<T>. Any exceptions
+  // are captured as well.
+  val out = example {
+    print("Hello World")
+  }
+// this is how you can append arbitrary markdown
++"""
+  This example prints **${out.stdOut}** when it executes. 
+""".trimIndent()
+```
+
+### Suspending examples
+
+If you use co-routines, you can use a suspendingExample
+
+```kotlin
+// call some suspending code
+```
+
+```kotlin
+// runs the example in a runBlocking { .. }
+suspendingExample {
+  // call some suspending code
 }
 ```
 
-Here's the same block as above running as part of this 
-[readme.kt](https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/readme.kt) file.
+### Configuring blocks
 
 ```kotlin
-println("Hello World")
-```
-
-Captured Output:
-
-```
-Hello World
-
-```
-
-As you can see, we indeed show a pretty printed block, ran it, and
-grabbed the output as well. Observant readers will also note that 
-the nested block above did not run. The reason for this is that 
-the outer `block` call for that has a `runBlock` parameter that 
-you can use to prevent this. If you look at the source code 
-for the readme, you will see we used `block(runBlock = false)`
-
-You can also return a value from the block and capture that:
-
-```kotlin
-fun aFunctionThatReturnsAnInt() = 1 + 1
-
-// call the function to make the block return something
-aFunctionThatReturnsAnInt()
-```
-
-->
-
-```
-2
-```
-
-Note how that captured the return value and printed that 
-without us using `print` or `println`.
-
-You can also use suspendingBlock if you use co-routines
-
-```kotlin
-suspend fun foo() {}
-
-suspendingBlock {
-  // call some suspending logic
-  foo()
+// sometimes you just want to show but not run the code
+example(
+  runExample = false,
+) {
+  // your example goes here
 }
+
+// making sure the example fits in a web page
+// long lines tend to look ugly in documentation
+example(
+  // default is 80
+  lineLength = 120,
+  // default is false
+  wrap = true,
+  // default is false
+  allowLongLines = true,
+
+) {
+  // more code here
+}
+```
+
+### Code snippets
+
+While it is nice to have executable blocks, 
+sometimes you just want to grab
+code directly from a file. You can do that with snippets.
+
+```kotlin
+// BEGIN_MY_CODE_SNIPPET
+println("Example code")
+// END_MY_CODE_SNIPPET
+exampleFromSnippet("readme.kt","MY_CODE_SNIPPET")
+```
+
+### Markdown
+
+```kotlin
+section("Section") {
+  +"""
+    You can use string literals, templates ${1+1}, 
+    and [links](https://github.com/jillesvangurp/kotlin4example)
+    or other markdown formatting.
+  """.trimIndent()
+}
+// you can also just include markdown files
+includeMdFile("intro.md")
+// link to things in your git repository
+mdLink(DocGenTest::class)
+mdLinkToRepoResource("build file","build.gradle.kts")
 ```
 
 ## This README is generated
 
-This README.md is actually created from kotlin code that 
+This README.md is of course created from kotlin code that 
 runs as part of the test suite. You can look at the kotlin 
 source code that generates this markdown [here](https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/readme.kt).
 
 ```kotlin
-val readme by k4ERepo.md {
+val readmeMarkdown by k4ERepo.md {
   // for larger bits of text, it's nice to load them from a markdown file
   includeMdFile("intro.md")
 
-  section("Example") {
-    block(runBlock = false) {
-      // documentation inception
-      // this is technically a block within a block, just so I can show you
-      // how you would use it.
-      block {
-        println("Hello World")
+  section("Usage") {
+    subSection("Example blocks") {
+      +"""
+        With Kotlin4Example you can mix examples and markdown easily. 
+        An example is a code block
+        and it is executed by default. Because it is a code block,
+         you are forced to ensure
+        it is syntactically correct and compiles. 
+        
+        By executing it, you can further guarantee it does what it 
+        is supposed to and you can
+        intercept output and integrate that into your documentation.
+        
+        For example:
+      """.trimIndent()
+
+      // a bit of kotlin4example inception here, but it works
+example {
+  // out is an ExampleOutput instance
+  // with both stdout and the return
+  // value as a Result<T>. Any exceptions
+  // are captured as well.
+  val out = example {
+    print("Hello World")
+  }
+// this is how you can append arbitrary markdown
++"""
+  This example prints **${out.stdOut}** when it executes. 
+""".trimIndent()
       }
     }
-    // of course you can inline a Kotlin multiline string with some markdown
-    // note the use of templating here and the helper function to generate
-    // a link
-    +"""
-      Here's the same block as above running as part of this 
-      ${mdLinkToSelf("readme.kt")} file.
-    """
+    subSection("Suspending examples") {
+      +"If you use co-routines, you can use a suspendingExample"
 
-    block {
-      println("Hello World")
+      example {
+        // runs the example in a runBlocking { .. }
+        suspendingExample {
+          // call some suspending code
+        }
+      }
     }
+    subSection("Configuring blocks") {
 
-    +"""
-      As you can see, we indeed show a pretty printed block, ran it, and
-      grabbed the output as well. Observant readers will also note that 
-      the nested block above did not run. The reason for this is that 
-      the outer `block` call for that has a `runBlock` parameter that 
-      you can use to prevent this. If you look at the source code 
-      for the readme, you will see we used `block(runBlock = false)`
-      
-      You can also return a value from the block and capture that:
-    """
+      example(runExample = false) {
+        // sometimes you just want to show but not run the code
+        example(
+          runExample = false,
+        ) {
+          // your example goes here
+        }
 
-    block {
-      fun aFunctionThatReturnsAnInt() = 1 + 1
+        // making sure the example fits in a web page
+        // long lines tend to look ugly in documentation
+        example(
+          // default is 80
+          lineLength = 120,
+          // default is false
+          wrap = true,
+          // default is false
+          allowLongLines = true,
 
-      // call the function to make the block return something
-      aFunctionThatReturnsAnInt()
+        ) {
+          // more code here
+        }
+      }
     }
+    subSection("Code snippets") {
+      +"""
+        While it is nice to have executable blocks, 
+        sometimes you just want to grab
+        code directly from a file. You can do that with snippets.
+      """.trimIndent()
 
-    +"""
-      Note how that captured the return value and printed that 
-      without us using `print` or `println`.
-      
-      You can also use suspendingBlock if you use co-routines
-    """
-
-    block(runBlock = false) {
-      suspend fun foo() {}
-
-      suspendingBlock {
-        // call some suspending logic
-        foo()
+      example {
+        // BEGIN_MY_CODE_SNIPPET
+        println("Example code")
+        // END_MY_CODE_SNIPPET
+        exampleFromSnippet("readme.kt","MY_CODE_SNIPPET")
+      }
+    }
+    subSection("Markdown") {
+      // you can use our Kotlin DSL to structure your documentation.
+      example(runExample = false) {
+        section("Section") {
+          +"""
+            You can use string literals, templates ${1+1}, 
+            and [links](https://github.com/jillesvangurp/kotlin4example)
+            or other markdown formatting.
+          """.trimIndent()
+        }
+        // you can also just include markdown files
+        includeMdFile("intro.md")
+        // link to things in your git repository
+        mdLink(DocGenTest::class)
+        mdLinkToRepoResource("build file","build.gradle.kts")
       }
     }
   }
 
   section("This README is generated") {
     +"""
-      This README.md is actually created from kotlin code that 
+      This README.md is of course created from kotlin code that 
       runs as part of the test suite. You can look at the kotlin 
       source code that generates this markdown ${mdLinkToSelf("here")}.
     """.trimIndent()
 
     // little string concatenation hack so it will read 
     // until the end marker instead of stopping here    
-    snippetFromSourceFile(
+    exampleFromSnippet(
       "com/jillesvangurp/kotlin4example/docs/readme.kt",
       "README" + "CODE"
     )
 
     """
-      And the code that actually writes the file is a test:
+      And the code that actually writes the `README.md file` is a test:
     """.trimIndent()
-    snippetBlockFromClass(DocGenTest::class, "READMEWRITE")
+    exampleFromSnippet(DocGenTest::class, "READMEWRITE")
   }
 
   includeMdFile("outro.md")
@@ -187,10 +275,16 @@ val readme by k4ERepo.md {
 ```
 
 ```kotlin
-@Test
-fun `generate readme for this project`() {
-  val readmeMd = Page("Kotlin4Example",fileName = "README.md")
-  readmeMd.write(markdown = readme)
+/**
+ * The readme is generated when the tests run.
+ */
+class DocGenTest {
+  @Test
+  fun `generate readme for this project`() {
+    val readmePage = Page("Kotlin4Example",fileName = "README.md")
+    // readmeMarkdown is a lazy of the markdown content
+    readmePage.write(markdown = readmeMarkdown)
+  }
 }
 ```
 

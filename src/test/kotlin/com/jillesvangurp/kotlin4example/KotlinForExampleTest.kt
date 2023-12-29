@@ -3,6 +3,7 @@ package com.jillesvangurp.kotlin4example
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
+import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -35,21 +36,33 @@ class KotlinForExampleTest {
     fun `do not allow long source lines`() {
         assertThrows<IllegalArgumentException> {
             repo.md {
-                block {
-                    // too long
-                    println("****************************************************************************************************")
-                }
+                // too long
+                renderExampleOutput(
+                    example(true, "kotlin", false, false, 80) {
+                        // too long
+                        println("****************************************************************************************************")
+                    },
+                    false
+                )
+
             }.value // make sure to access the value
         }
     }
 
     @Test
     fun `wrap long source lines`() {
+
         repo.md {
-            block(wrap = true) {
-                // too long but will be wrapped
-                println("****************************************************************************************************")
-            }
+            // too long but will be wrapped
+            renderExampleOutput(
+                example(wrap = true, block = {
+                    // too long but will be wrapped
+                    println("****************************************************************************************************")
+                }),
+                false,
+                wrap = true
+            )
+
         }.value.lines().forEach {
             it.length shouldBeLessThanOrEqual 80
         } // make sure to access the value
@@ -58,41 +71,54 @@ class KotlinForExampleTest {
     @Test
     fun `capture return value`() {
         repo.md {
-            block {
-                1+1
-            }
+
+            renderExampleOutput(
+                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.(): Int {
+                    return 1 + 1
+                }),
+                false
+            )
         }.value shouldContain "2"
     }
 
     @Test
     fun `capture return value in suspendingBlock`() {
         repo.md {
-            suspendingBlock {
-                1+1
-            }
+            renderExampleOutput(
+                suspendingExample {
+                    1 + 1
+                },
+                false
+            )
         }.value shouldContain "2"
     }
 
     @Test
     fun `capture output from multiple blocks`() {
         val out1 = repo.md {
-            block(printStdOut = false) {
+            example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
                 print("hel")
                 print("lo")
             }
+            )
         }.value
         // if we disable printing nothing gets printed
         out1 shouldNotContain "hello"
 
-        val bo = BlockOutputCapture()
         val out2 = repo.md {
-            block(printStdOut = false, blockCapture = bo) {
-                print("hel")
-                print("lo")
-            }
-            block(printStdOut = true, blockCapture = bo) {
-                println("world")
-            }
+            renderExampleOutput(
+                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
+                    print("hel")
+                    print("lo")
+                }),
+                true
+            )
+            renderExampleOutput(
+                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
+                    println("world")
+                }),
+                false
+            )
         }.value
         // but we can reuse the same block capture and print at the end
         out2 shouldContain "hello"

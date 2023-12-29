@@ -41,33 +41,40 @@ class BlockOutputCapture {
     }
 }
 
+data class ExampleOutput<T>(
+    val result: Result<T?>,
+    val stdOut: String,
+)
 
 @Suppress("MemberVisibilityCanBePrivate")
 class Kotlin4Example(
     private val sourceRepository: SourceRepository
-) : AutoCloseable {
+) {
     private val buf = StringBuilder()
 
-    private val patternForBlock = "(suspendingBlock|block).*?\\{+".toRegex(RegexOption.MULTILINE)
+    private val patternForBlock = "(suspendingBlock|block|example|suspendingExample).*?\\{+".toRegex(RegexOption.MULTILINE)
 
+    /**
+     * Append some arbitrary markdown. Tip, you can use raw strings and string templates """${1+1}"""
+     */
     operator fun String.unaryPlus() {
         buf.appendLine(this.trimIndent().trimMargin())
         buf.appendLine()
     }
 
-    fun section(title: String, block: (Kotlin4Example.() -> Unit)? = null)  {
+    fun section(title: String, block: (Kotlin4Example.() -> Unit)? = null) {
         buf.appendLine("## $title")
         buf.appendLine()
         block?.invoke(this)
     }
 
-    fun subSection(title: String, block: (Kotlin4Example.() -> Unit)? = null)  {
+    fun subSection(title: String, block: (Kotlin4Example.() -> Unit)? = null) {
         buf.appendLine("### $title")
         buf.appendLine()
         block?.invoke(this)
     }
 
-    fun mdCodeBlock(
+    private fun mdCodeBlock(
         code: String,
         type: String = "kotlin",
         allowLongLines: Boolean = false,
@@ -129,6 +136,7 @@ class Kotlin4Example(
         return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
     }
 
+    @Deprecated("Use exampleFromSnippet", ReplaceWith("exampleFromSnippet(clazz, snippetId, allowLongLines, wrap, lineLength, type)"))
     fun snippetBlockFromClass(
         clazz: KClass<*>,
         snippetId: String,
@@ -137,9 +145,19 @@ class Kotlin4Example(
         lineLength: Int = 80,
         type: String = "kotlin"
     ) {
+        exampleFromSnippet(clazz, snippetId, allowLongLines, wrap, lineLength, type)
+    }
+    fun exampleFromSnippet(
+        clazz: KClass<*>,
+        snippetId: String,
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        type: String = "kotlin"
+    ) {
         val fileName = sourcePathForClass(clazz)
-        snippetFromSourceFile(
-            fileName = fileName,
+        exampleFromSnippet(
+            sourceFileName = fileName,
             snippetId = snippetId,
             allowLongLines = allowLongLines,
             wrap = wrap,
@@ -148,6 +166,7 @@ class Kotlin4Example(
         )
     }
 
+    @Deprecated("Use exampleFromSnippet", ReplaceWith("exampleFromSnippet(fileName,snippetId, allowLongLines, wrap, lineLength, type)"))
     fun snippetFromSourceFile(
         fileName: String,
         snippetId: String,
@@ -156,9 +175,22 @@ class Kotlin4Example(
         lineLength: Int = 80,
         type: String = "kotlin"
     ) {
+        exampleFromSnippet(fileName,snippetId, allowLongLines, wrap, lineLength, type)
+    }
+
+    fun exampleFromSnippet(
+        sourceFileName: String,
+        snippetId: String,
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        type: String = "kotlin"
+    ) {
         val snippetLines = mutableListOf<String>()
 
-        val lines = File(sourceRepository.sourcePaths.map { File(it, fileName) }.firstOrNull { it.exists() }?.path ?: fileName).readLines()
+        val lines = File(sourceRepository.sourcePaths.map { File(it, sourceFileName) }.firstOrNull { it.exists() }?.path
+            ?: sourceFileName
+        ).readLines()
         var inSnippet = false
         for (line in lines) {
             if (inSnippet && line.contains(snippetId)) {
@@ -173,7 +205,7 @@ class Kotlin4Example(
             }
         }
         if (snippetLines.size == 0) {
-            throw IllegalArgumentException("Snippet $snippetId not found in $fileName")
+            throw IllegalArgumentException("Snippet $snippetId not found in $sourceFileName")
         }
         mdCodeBlock(
             snippetLines.joinToString("\n").trimIndent(),
@@ -184,6 +216,103 @@ class Kotlin4Example(
         )
     }
 
+    fun <T> suspendingExample(
+        runExample: Boolean = true,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        block: suspend BlockOutputCapture.() -> T
+    ): ExampleOutput<T> {
+        val state = BlockOutputCapture()
+        val returnVal = try {
+            if (runExample) {
+                runBlocking {
+                    Result.success(block.invoke(state))
+                }
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+        val callerSourceBlock =
+            getCallerSourceBlock() ?: throw IllegalStateException("source block could not be extracted")
+        mdCodeBlock(
+            code = callerSourceBlock,
+            allowLongLines = allowLongLines,
+            wrap = wrap,
+            lineLength = lineLength,
+            type = type
+        )
+
+        return ExampleOutput(returnVal, state.output())
+    }
+    fun <T> example(
+        runExample: Boolean = true,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        block: BlockOutputCapture.() -> T
+    ): ExampleOutput<T> {
+        val state = BlockOutputCapture()
+        val returnVal = try {
+            if (runExample) {
+                Result.success(block.invoke(state))
+            } else {
+                Result.success(null)
+            }
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+        val callerSourceBlock =
+            getCallerSourceBlock() ?: throw IllegalStateException("source block could not be extracted")
+        mdCodeBlock(
+            code = callerSourceBlock,
+            allowLongLines = allowLongLines,
+            wrap = wrap,
+            lineLength = lineLength,
+            type = type
+        )
+
+        return ExampleOutput(returnVal, state.output().trimIndent())
+    }
+
+    fun <T> renderExampleOutput(
+        exampleOutput: ExampleOutput<T>,
+        stdOutOnly: Boolean = true,
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+    ) {
+        if(!stdOutOnly) {
+            exampleOutput.result.let { r ->
+                r.getOrNull()?.let { returnValue ->
+                    if(returnValue !is Unit) {
+                        mdCodeBlock(
+                            returnValue.toString(),
+                            allowLongLines = allowLongLines,
+                            wrap = wrap,
+                            lineLength = lineLength,
+                            type = "text"
+                        )
+                    }
+                }
+            }
+        }
+        exampleOutput.stdOut.takeIf { it.isNotBlank() }?.let {
+            mdCodeBlock(
+                it,
+                allowLongLines = allowLongLines,
+                wrap = wrap,
+                lineLength = lineLength,
+                type = "text"
+            )
+        }
+    }
+
+    @Deprecated("Use the new example function", ReplaceWith("""renderExampleOutput(example(runBlock,type,allowLongLines,wrap,lineLength,block),!captureBlockReturnValue,allowLongLines,wrap,lineLength)"""))
     fun <T> block(
         runBlock: Boolean = true,
         type: String = "kotlin",
@@ -197,6 +326,7 @@ class Kotlin4Example(
         block: BlockOutputCapture.() -> T
     ) {
         val state = BlockOutputCapture()
+        @Suppress("DEPRECATION")
         block(
             allowLongLines = allowLongLines,
             type = type,
@@ -212,6 +342,7 @@ class Kotlin4Example(
         )
     }
 
+    @Deprecated("Use the new example function", ReplaceWith("""renderExampleOutput(example(runBlock,type,allowLongLines,wrap,lineLength,block),!captureBlockReturnValue,allowLongLines,wrap,lineLength)"""))
     fun <T> block(
         runBlock: Boolean = true,
         type: String = "kotlin",
@@ -238,7 +369,7 @@ class Kotlin4Example(
         if (runBlock) {
             val response = block.invoke(blockCapture)
             if (response !is Unit) {
-                if(captureBlockReturnValue) {
+                if (captureBlockReturnValue) {
                     buf.appendLine("$returnValuePrefix\n")
                     mdCodeBlock(response.toString(), type = "")
                 }
@@ -262,6 +393,7 @@ class Kotlin4Example(
         }
     }
 
+    @Deprecated("Use the new suspendingExample function", ReplaceWith("""renderExampleOutput(suspendingExample(runBlock,type,allowLongLines,wrap,lineLength,block),!captureBlockReturnValue,allowLongLines,wrap,lineLength)"""))
     fun <T> suspendingBlock(
         runBlock: Boolean = true,
         type: String = "kotlin",
@@ -275,6 +407,7 @@ class Kotlin4Example(
         block: suspend BlockOutputCapture.() -> T
     ) {
         val state = BlockOutputCapture()
+        @Suppress("DEPRECATION")
         suspendingBlock(
             allowLongLines = allowLongLines,
             type = type,
@@ -289,6 +422,8 @@ class Kotlin4Example(
             stdOutPrefix = stdOutPrefix
         )
     }
+
+    @Deprecated("Use the new suspendingExample function", ReplaceWith("""renderExampleOutput(suspendingExample(runBlock,type,allowLongLines,wrap,lineLength,block),!captureBlockReturnValue,allowLongLines,wrap,lineLength)"""))
     fun <T> suspendingBlock(
         runBlock: Boolean = true,
         type: String = "kotlin",
@@ -423,16 +558,13 @@ class Kotlin4Example(
             }
     }
 
-    override fun close() {
-    }
-
     companion object {
         fun markdown(
             sourceRepository: SourceRepository,
             block: Kotlin4Example.() -> Unit
         ): String {
             val example = Kotlin4Example(sourceRepository)
-            example.use(block)
+            example.apply(block)
             return example.buf.toString()
         }
     }
