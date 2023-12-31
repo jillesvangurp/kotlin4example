@@ -74,20 +74,24 @@ class Kotlin4Example(
         block?.invoke(this)
     }
 
-    private fun mdCodeBlock(
+    fun mdCodeBlock(
         code: String,
-        type: String = "kotlin",
+        type: String,
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
         lineLength: Int = 80
     ) {
         var c = code.replace("    ", "  ")
         if (wrap) {
+            var l = 1
             c = c.lines().flatMap { line ->
                 if (line.length <= lineLength) {
                     listOf(line)
                 } else {
+                    logger.warn { "wrapping line longer than 80 characters at line $l:\n$line" }
                     line.chunked(lineLength)
+                }.also {
+                    l++
                 }
             }.joinToString("\n")
         }
@@ -96,7 +100,7 @@ class Kotlin4Example(
             var error = 0
             c.lines().forEach {
                 if (it.length > lineLength) {
-                    logger.warn { "code block contains lines longer than 80 characters at line $l:\n$it" }
+                    logger.error { "code block contains lines longer than 80 characters at line $l:\n$it" }
                     error++
                 }
                 l++
@@ -122,7 +126,6 @@ class Kotlin4Example(
         return mdLink(
             title = "`${clazz.simpleName!!}`",
             target = sourceRepository.urlForFile(sourcePathForClass(clazz))
-
         )
     }
 
@@ -216,7 +219,26 @@ class Kotlin4Example(
         )
     }
 
+    @Deprecated("Use example, which now takes a suspending block by default", ReplaceWith("example(runExample, type, allowLongLines, wrap, lineLength, block)"))
     fun <T> suspendingExample(
+        runExample: Boolean = true,
+        type: String = "kotlin",
+        allowLongLines: Boolean = false,
+        wrap: Boolean = false,
+        lineLength: Int = 80,
+        block: suspend BlockOutputCapture.() -> T
+    ): ExampleOutput<T> {
+       return example(
+           runExample = runExample,
+           type = type,
+           allowLongLines = allowLongLines,
+           wrap = wrap,
+           lineLength = lineLength,
+           block = block
+       )
+    }
+
+    fun <T> example(
         runExample: Boolean = true,
         type: String = "kotlin",
         allowLongLines: Boolean = false,
@@ -230,36 +252,6 @@ class Kotlin4Example(
                 runBlocking {
                     Result.success(block.invoke(state))
                 }
-            } else {
-                Result.success(null)
-            }
-        } catch (e: Exception) {
-            Result.failure(e)
-        }
-        val callerSourceBlock =
-            getCallerSourceBlock() ?: throw IllegalStateException("source block could not be extracted")
-        mdCodeBlock(
-            code = callerSourceBlock,
-            allowLongLines = allowLongLines,
-            wrap = wrap,
-            lineLength = lineLength,
-            type = type
-        )
-
-        return ExampleOutput(returnVal, state.output())
-    }
-    fun <T> example(
-        runExample: Boolean = true,
-        type: String = "kotlin",
-        allowLongLines: Boolean = false,
-        wrap: Boolean = false,
-        lineLength: Int = 80,
-        block: BlockOutputCapture.() -> T
-    ): ExampleOutput<T> {
-        val state = BlockOutputCapture()
-        val returnVal = try {
-            if (runExample) {
-                Result.success(block.invoke(state))
             } else {
                 Result.success(null)
             }

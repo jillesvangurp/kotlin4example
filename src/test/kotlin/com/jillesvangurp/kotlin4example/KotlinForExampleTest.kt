@@ -3,7 +3,6 @@ package com.jillesvangurp.kotlin4example
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
-import kotlinx.coroutines.runBlocking
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
@@ -11,10 +10,14 @@ val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
 
 val testDocOutsideClass by repo.md {
     // should not contain FooBar because this comment is outside the block
-    block {
-        // should contain BarFoo from this comment
-        println("Hello" + " World!")
-    }
+    // should contain BarFoo from this comment
+    renderExampleOutput(
+        exampleOutput = example(true, "kotlin", false, false, 80) {
+            // should contain BarFoo from this comment
+            println("Hello" + " World!")
+        },
+        stdOutOnly = false
+    )
     +mdLinkToSelf()
     // and the output of the println
 }
@@ -71,11 +74,10 @@ class KotlinForExampleTest {
     @Test
     fun `capture return value`() {
         repo.md {
-
             renderExampleOutput(
-                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.(): Int {
-                    return 1 + 1
-                }),
+                example(true, "kotlin", false, false, 80) {
+                    1 + 1
+                },
                 false
             )
         }.value shouldContain "2"
@@ -85,7 +87,7 @@ class KotlinForExampleTest {
     fun `capture return value in suspendingBlock`() {
         repo.md {
             renderExampleOutput(
-                suspendingExample {
+                example {
                     1 + 1
                 },
                 false
@@ -96,27 +98,27 @@ class KotlinForExampleTest {
     @Test
     fun `capture output from multiple blocks`() {
         val out1 = repo.md {
-            example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
+            example(true, "kotlin", false, false, 80
+            ) {
                 print("hel")
                 print("lo")
             }
-            )
         }.value
         // if we disable printing nothing gets printed
         out1 shouldNotContain "hello"
 
         val out2 = repo.md {
             renderExampleOutput(
-                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
+                example(true, "kotlin", false, false, 80) {
                     print("hel")
                     print("lo")
-                }),
+                },
                 true
             )
             renderExampleOutput(
-                example(true, "kotlin", false, false, 80, fun BlockOutputCapture.() {
+                example(true, "kotlin", false, false, 80) {
                     println("world")
-                }),
+                },
                 false
             )
         }.value
