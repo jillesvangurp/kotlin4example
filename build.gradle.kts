@@ -1,10 +1,10 @@
+@file:Suppress("GradlePackageVersionRange") // bs warning because we use refreshVersions
+
 plugins {
     kotlin("jvm")
     `maven-publish`
+    id("org.jetbrains.dokka")
 }
-
-group = "com.jillesvangurp"
-version = "1.0-SNAPSHOT"
 
 repositories {
     mavenCentral()
@@ -47,18 +47,28 @@ tasks.withType<Test> {
 val artifactName = "kotlin4example"
 val artifactGroup = "com.github.jillesvangurp"
 
+
+val dokkaOutputDir = "${layout.buildDirectory.get()}/dokka"
+
+tasks {
+    dokkaHtml {
+        outputDirectory.set(file(dokkaOutputDir))
+    }
+}
+
+val javadocJar by tasks.registering(Jar::class) {
+    dependsOn(tasks.dokkaHtml)
+    archiveClassifier.set("javadoc")
+    from(dokkaOutputDir)
+}
+
 publishing {
     publications {
         create<MavenPublication>("lib") {
             groupId = artifactGroup
             artifactId = artifactName
             from(components["java"])
-        }
-    }
-    repositories {
-        maven {
-            name = "myRepo"
-            url = uri("file://${layout.buildDirectory.asFile.get().path}/repo")
+            artifact(javadocJar.get())
         }
     }
 }

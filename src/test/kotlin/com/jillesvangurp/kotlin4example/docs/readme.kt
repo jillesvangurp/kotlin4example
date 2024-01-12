@@ -3,7 +3,7 @@ package com.jillesvangurp.kotlin4example.docs
 import com.jillesvangurp.kotlin4example.DocGenTest
 import com.jillesvangurp.kotlin4example.SourceRepository
 
-val k4ERepo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
+val k4ERepo = SourceRepository("https://github.com/jillesvangurp/kotlin4example", branch = "master")
 
 val readmeMarkdown by k4ERepo.md {
     // for larger bits of text, it's nice to load them from a markdown file
@@ -142,6 +142,45 @@ val readmeMarkdown by k4ERepo.md {
                 The code that writes the `README.md file` is as follows:
             """.trimIndent()
             exampleFromSnippet(DocGenTest::class, "READMEWRITE")
+        }
+        subSection("Context receivers") {
+
+            +"""
+                A new feature in Kotlin that you currently have to opt into is context receivers.
+                
+                Context receivers are useful for processing the output of your examples since you typically
+                need Kotlin4Example when you use the ExampleOutput.
+                
+                I don't want
+                to force people to opt into context receivers yet but it's easy to add this yourself.
+                
+                Simply add a simple extension function like this:.
+            """.trimIndent()
+
+            mdCodeBlock("""
+                context(Kotlin4Example)!
+                fun ExampleOutput<*>.printStdOut() {
+                  +""${'"'}
+                      This prints:
+                  ""${'"'}.trimIndent()
+                 
+                  mdCodeBlock(stdOut, type = "text", wrap = true)
+                }                
+            """.trimIndent(), "kotlin")
+
+            +"""
+                And then you can use it `example { 1+1}.printStdOut()`.
+                
+                To opt into context receivers, add this to your build file
+            """.trimIndent()
+            mdCodeBlock("""
+                kotlin {
+                    compilerOptions {
+                        freeCompilerArgs= listOf("-Xcontext-receivers")
+                    }
+                }                
+            """.trimIndent(), "kotlin")
+
         }
     }
 

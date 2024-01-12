@@ -6,7 +6,7 @@ import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
 import org.junit.jupiter.api.assertThrows
 
-val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example")
+val repo = SourceRepository("https://github.com/jillesvangurp/kotlin4example", branch = "master")
 
 val testDocOutsideClass by repo.md {
     // should not contain FooBar because this comment is outside the block

@@ -5,9 +5,7 @@ package com.jillesvangurp.kotlin4example
 import kotlinx.coroutines.runBlocking
 import mu.KLogger
 import mu.KotlinLogging
-import java.io.ByteArrayOutputStream
 import java.io.File
-import java.io.PrintWriter
 import kotlin.reflect.KClass
 
 private val logger: KLogger = KotlinLogging.logger { }
@@ -18,35 +16,17 @@ fun mdLink(page: Page) = mdLink(page.title, page.fileName)
 fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) =
     lazyOf(Kotlin4Example.markdown(sourceRepository, block))
 
-class BlockOutputCapture {
-    private val byteArrayOutputStream = ByteArrayOutputStream()
-    private val printWriter = PrintWriter(byteArrayOutputStream)
+@DslMarker
+annotation class Kotlin4ExampleDSL
 
-    fun print(message: Any?) {
-        printWriter.print(message)
-    }
-
-    fun println(message: Any?) {
-        printWriter.println(message)
-    }
-
-    fun output(): String {
-        printWriter.flush()
-        return byteArrayOutputStream.toString()
-    }
-
-    fun reset() {
-        printWriter.flush()
-        byteArrayOutputStream.reset()
-    }
-}
-
-data class ExampleOutput<T>(
-    val result: Result<T?>,
-    val stdOut: String,
-)
-
+/**
+ * A Kotlin DSL (Domain Specific Language) that you can use to generate markdown documentation
+ * for your Kotlin code.
+ *
+ * The [sourceRepository] is used to create markdown links to files in your github repository.
+ */
 @Suppress("MemberVisibilityCanBePrivate")
+@Kotlin4ExampleDSL
 class Kotlin4Example(
     private val sourceRepository: SourceRepository
 ) {
@@ -62,18 +42,31 @@ class Kotlin4Example(
         buf.appendLine()
     }
 
+    /**
+     * Create a section (## [title]) and use the [block] to specify what should be in the section.
+     */
     fun section(title: String, block: (Kotlin4Example.() -> Unit)? = null) {
         buf.appendLine("## $title")
         buf.appendLine()
         block?.invoke(this)
     }
 
+    /**
+     * Create a sub section (### [title]) and use the [block] to specify what should be in the section.
+     */
     fun subSection(title: String, block: (Kotlin4Example.() -> Unit)? = null) {
         buf.appendLine("### $title")
         buf.appendLine()
         block?.invoke(this)
     }
 
+    /**
+     * Create a markdown code block for some [code] of a particular [type].
+     *
+     * Use [allowLongLines] turn off the check for lines longer than [lineLength]
+     *
+     * Use [wrap] to wrap your code. Note, all it does is add a new line at the 80th character
+     */
     fun mdCodeBlock(
         code: String,
         type: String,
@@ -113,6 +106,9 @@ class Kotlin4Example(
         buf.appendLine("```$type\n$c\n```\n")
     }
 
+    /**
+     * Include the content of markdown file. The name the relative path to the directory your documentation is in.
+     */
     fun includeMdFile(name: String) {
         val dir = sourceDirOfCaller()
         val file = "$dir${File.separatorChar}$name"
@@ -122,16 +118,29 @@ class Kotlin4Example(
         buf.appendLine()
     }
 
-    fun mdLink(clazz: KClass<*>): String {
+    /**
+     * Create a link to the source code of file that contains the [clazz] in your [SourceRepository].
+     *
+     * The [title] defaults to the class name.
+     */
+    fun mdLink(clazz: KClass<*>, title: String="`${clazz.simpleName!!}`"): String {
         return mdLink(
-            title = "`${clazz.simpleName!!}`",
+            title = title,
             target = sourceRepository.urlForFile(sourcePathForClass(clazz))
         )
     }
 
+    /**
+     * Create a link to a file in your [SourceRepository] with a [title].
+     *
+     * The [relativeUrl] should be relative to your source repository root.
+     */
     fun mdLinkToRepoResource(title: String, relativeUrl: String) =
         mdLink(title, sourceRepository.repoUrl + relativeUrl)
 
+    /**
+     * Creates a link to the source file from which you are calling this.
+     */
     fun mdLinkToSelf(title: String = "Link to this source file"): String {
         val fn = this.sourceFileOfCaller()
         val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
@@ -150,6 +159,16 @@ class Kotlin4Example(
     ) {
         exampleFromSnippet(clazz, snippetId, allowLongLines, wrap, lineLength, type)
     }
+
+    /**
+     * Creates a code block from code in the specified class.
+     *
+     * [snippetId] should be included in the source code in comments at the beginning and end of your example.
+     *
+     * Use [allowLongLines], [wrap], and [lineLength] to control the behavior for long lines (similar to [example].
+     *
+     * The [type] defaults to kotlin.
+     */
     fun exampleFromSnippet(
         clazz: KClass<*>,
         snippetId: String,
@@ -181,6 +200,15 @@ class Kotlin4Example(
         exampleFromSnippet(fileName,snippetId, allowLongLines, wrap, lineLength, type)
     }
 
+    /**
+     * Creates a code block for a [sourceFile] in your [SourceRepository]
+     *
+     * [snippetId] should be included in the source code in comments at the beginning and end of your example.
+     *
+     * Use [allowLongLines], [wrap], and [lineLength] to control the behavior for long lines (similar to [example].
+     *
+     * The [type] defaults to kotlin.
+     */
     fun exampleFromSnippet(
         sourceFileName: String,
         snippetId: String,
@@ -238,6 +266,23 @@ class Kotlin4Example(
        )
     }
 
+    /**
+     * Create a markdown code block for the code in the [block].
+     *
+     * The [block] takes a [BlockOutputCapture] as the parameter. You can use this to make
+     * calls to print and println. The output is returned as part of [ExampleOutput] along
+     * with the return value of your block.
+     *
+     * Use [runExample] to turn off execution of the block. This is useful if you want to show
+     * code with undesirable side effects or that is slow to run. Defaults to true so it will
+     * run your code unless change this.
+     *
+     * The [type] defaults to kotlin.
+     *
+     * Use [allowLongLines] turn off the check for lines longer than [lineLength]
+     *
+     * Use [wrap] to wrap your code. Note, all it does is add a new line at the 80th character
+     */
     fun <T> example(
         runExample: Boolean = true,
         type: String = "kotlin",
@@ -271,6 +316,23 @@ class Kotlin4Example(
         return ExampleOutput(returnVal, state.output().trimIndent())
     }
 
+    /**
+     * Add the output of your example to the markdown.
+     *
+     * Note. a future version of this library will use context receivers for this.
+     * If you can opt in to this in your code base, it's easy to add this yourself:
+     *
+     * ```
+     * context(Kotlin4Example)
+     * fun ExampleOutput<*>.printStdOut() {
+     *     +"""
+     *         This prints:
+     *     """.trimIndent()
+     *
+     *     mdCodeBlock(stdOut, type = "text", wrap = true)
+     * }
+     * ```
+     */
     fun <T> renderExampleOutput(
         exampleOutput: ExampleOutput<T>,
         stdOutOnly: Boolean = true,
