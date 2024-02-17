@@ -208,11 +208,11 @@ Simply add a simple extension function like this:.
 context(Kotlin4Example)!
 fun ExampleOutput<*>.printStdOut() {
   +"""
-  This prints:
+    This prints:
   """.trimIndent()
  
   mdCodeBlock(stdOut, type = "text", wrap = true)
-}        
+}
 ```
 
 And then you can use it `example { 1+1}.printStdOut()`.

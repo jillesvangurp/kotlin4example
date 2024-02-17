@@ -155,4 +155,16 @@ class KotlinForExampleTest {
             }
         """.trimIndent()
     }
+
+    @Test
+    fun `should not reindent already indented`() {
+        val json="""
+            {
+              "foo": {
+                "bar": "foo"
+              }
+            }
+        """.trimIndent()
+        json.reIndent() shouldBe json
+    }
 }

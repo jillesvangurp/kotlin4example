@@ -649,7 +649,7 @@ fun String.reIndent(indent: Int=2): String {
     return this.lines().firstOrNull {
         val whiteSpace = spaceFinder.find(it)?.value
         whiteSpace?.let {
-            whiteSpace.length > indent
+            whiteSpace.length >= indent
         }  == true
     }?.let {
         val whiteSpace = spaceFinder.find(it)!!.groups[1]!!.value

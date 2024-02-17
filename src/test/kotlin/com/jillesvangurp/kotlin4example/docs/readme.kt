@@ -161,11 +161,11 @@ val readmeMarkdown by k4ERepo.md {
                 context(Kotlin4Example)!
                 fun ExampleOutput<*>.printStdOut() {
                   +""${'"'}
-                      This prints:
+                    This prints:
                   ""${'"'}.trimIndent()
                  
                   mdCodeBlock(stdOut, type = "text", wrap = true)
-                }                
+                }
             """.trimIndent(), "kotlin")
 
             +"""
