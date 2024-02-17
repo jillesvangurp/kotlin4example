@@ -65,16 +65,22 @@ class Kotlin4Example(
      *
      * Use [allowLongLines] turn off the check for lines longer than [lineLength]
      *
-     * Use [wrap] to wrap your code. Note, all it does is add a new line at the 80th character
+     * Use [wrap] to wrap your code. Note, all it does is add a new line at the 80th character.
+     *
+     * Use [reIndent] to change the indentation of the code to [reIndentSize]. Shorter indentation helps
+     * keeping the lines short. Defaults to true
      */
     fun mdCodeBlock(
         code: String,
         type: String,
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
-        lineLength: Int = 80
+        lineLength: Int = 80,
+        reIndent: Boolean = true,
+        reIndentSize: Int = 2
     ) {
-        var c = code.replace("    ", "  ")
+        // reindenting is useful when including source snippets that are indented with 4 or 8 spaces
+        var c = if(reIndent) code.reIndent(reIndentSize) else code
         if (wrap) {
             var l = 1
             c = c.lines().flatMap { line ->
@@ -215,7 +221,9 @@ class Kotlin4Example(
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
         lineLength: Int = 80,
-        type: String = "kotlin"
+        type: String = "kotlin",
+        reIndent: Boolean = true,
+        reIndentSize: Int = 2
     ) {
         val snippetLines = mutableListOf<String>()
 
@@ -243,7 +251,9 @@ class Kotlin4Example(
             type = type,
             allowLongLines = allowLongLines,
             wrap = wrap,
-            lineLength = lineLength
+            lineLength = lineLength,
+            reIndent=reIndent,
+            reIndentSize=reIndentSize,
         )
     }
 
@@ -289,6 +299,8 @@ class Kotlin4Example(
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
         lineLength: Int = 80,
+        reIndent: Boolean = true,
+        reIndentSize: Int = 2,
         block: suspend BlockOutputCapture.() -> T
     ): ExampleOutput<T> {
         val state = BlockOutputCapture()
@@ -310,7 +322,9 @@ class Kotlin4Example(
             allowLongLines = allowLongLines,
             wrap = wrap,
             lineLength = lineLength,
-            type = type
+            type = type,
+            reIndent = reIndent,
+            reIndentSize = reIndentSize,
         )
 
         return ExampleOutput(returnVal, state.output().trimIndent())
@@ -339,6 +353,8 @@ class Kotlin4Example(
         allowLongLines: Boolean = false,
         wrap: Boolean = false,
         lineLength: Int = 80,
+        reIndent: Boolean = true,
+        reIndentSize: Int = 2
     ) {
         if(!stdOutOnly) {
             exampleOutput.result.let { r ->
@@ -349,7 +365,9 @@ class Kotlin4Example(
                             allowLongLines = allowLongLines,
                             wrap = wrap,
                             lineLength = lineLength,
-                            type = "text"
+                            type = "text",
+                            reIndent = reIndent,
+                            reIndentSize = reIndentSize,
                         )
                     }
                 }
@@ -361,7 +379,9 @@ class Kotlin4Example(
                 allowLongLines = allowLongLines,
                 wrap = wrap,
                 lineLength = lineLength,
-                type = "text"
+                type = "text",
+                reIndent = reIndent,
+                reIndentSize = reIndentSize,
             )
         }
     }
@@ -622,4 +642,23 @@ class Kotlin4Example(
             return example.buf.toString()
         }
     }
+}
+
+fun String.reIndent(indent: Int=2): String {
+    val spaceFinder = "^(\\s+)".toRegex()
+    return this.lines().firstOrNull {
+        val whiteSpace = spaceFinder.find(it)?.value
+        whiteSpace?.let {
+            whiteSpace.length > indent
+        }  == true
+    }?.let {
+        val whiteSpace = spaceFinder.find(it)!!.groups[1]!!.value
+        if(whiteSpace.length != indent ) {
+            val originalIndent = " ".repeat(whiteSpace.length)
+            val newIndent = " ".repeat(indent)
+            this.replace(originalIndent, newIndent)
+        } else {
+            this
+        }
+    }?:this
 }

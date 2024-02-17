@@ -10,7 +10,7 @@ import org.junit.jupiter.api.Test
 class DocGenTest {
     @Test
     fun `generate readme for this project`() {
-        val readmePage = Page("Kotlin4Example",fileName = "README.md")
+        val readmePage = Page("Kotlin4Example", fileName = "README.md")
         // readmeMarkdown is a lazy of the markdown content
         readmePage.write(markdown = readmeMarkdown)
     }

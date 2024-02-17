@@ -185,7 +185,7 @@ The code that writes the `README.md file` is as follows:
 class DocGenTest {
   @Test
   fun `generate readme for this project`() {
-    val readmePage = Page("Kotlin4Example",fileName = "README.md")
+    val readmePage = Page("Kotlin4Example", fileName = "README.md")
     // readmeMarkdown is a lazy of the markdown content
     readmePage.write(markdown = readmeMarkdown)
   }
@@ -208,7 +208,7 @@ Simply add a simple extension function like this:.
 context(Kotlin4Example)!
 fun ExampleOutput<*>.printStdOut() {
   +"""
-    This prints:
+  This prints:
   """.trimIndent()
  
   mdCodeBlock(stdOut, type = "text", wrap = true)

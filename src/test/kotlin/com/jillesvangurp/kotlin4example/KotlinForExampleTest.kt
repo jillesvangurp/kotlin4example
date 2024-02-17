@@ -1,6 +1,8 @@
 package com.jillesvangurp.kotlin4example
 
 import io.kotest.matchers.ints.shouldBeLessThanOrEqual
+import io.kotest.matchers.shouldBe
+import io.kotest.matchers.shouldNotBe
 import io.kotest.matchers.string.shouldContain
 import io.kotest.matchers.string.shouldNotContain
 import org.junit.jupiter.api.Test
@@ -125,5 +127,32 @@ class KotlinForExampleTest {
         // but we can reuse the same block capture and print at the end
         out2 shouldContain "hello"
         out2 shouldContain "world"
+    }
+
+    @Test
+    fun `reindent correctly`() {
+        val json = """
+            {
+                "foo": {
+                    "bar": "foo"
+                }
+            }
+        """.trimIndent()
+        val reindented = json.reIndent(2)
+        reindented.lines().firstOrNull {
+            // should have cleaned up the double indent
+            it.startsWith("        ")
+        } shouldBe null
+        reindented.lines().firstOrNull {
+            // should have replaced the double indent with four spaces
+            it.startsWith("    ")
+        } shouldNotBe null
+        reindented shouldBe """
+            {
+              "foo": {
+                "bar": "foo"
+              }
+            }
+        """.trimIndent()
     }
 }
