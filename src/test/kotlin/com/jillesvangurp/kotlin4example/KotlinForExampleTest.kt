@@ -34,7 +34,7 @@ class KotlinForExampleTest {
 
     @Test
     fun `link to self should be correct`() {
-        testDocOutsideClass shouldContain "https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/KotlinForExampleTest.kt"
+        testDocOutsideClass shouldContain "https://github.com/jillesvangurp/kotlin4example/blob/master/src/test/kotlin/com/jillesvangurp/kotlin4example/KotlinForExampleTest.kt"
     }
 
     @Test

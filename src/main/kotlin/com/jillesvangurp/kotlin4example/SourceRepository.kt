@@ -22,5 +22,5 @@ data class SourceRepository(
     /**
      * Construct a url to a given path in your repository.
      */
-    fun urlForFile(path: String) = "${repoUrl}/tree/${branch}/$path"
+    fun urlForFile(path: String) = "${repoUrl}/blob/${branch}/$path"
 }

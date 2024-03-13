@@ -151,7 +151,7 @@ class Kotlin4Example(
         val fn = this.sourceFileOfCaller()
         val path = sourceRepository.sourcePaths.map { File(it, fn) }.firstOrNull { it.exists() }?.path
             ?: throw IllegalStateException("file not found")
-        return mdLink(title, "${sourceRepository.repoUrl}/tree/${sourceRepository.branch}/${path}")
+        return mdLink(title, "${sourceRepository.repoUrl}/blob/${sourceRepository.branch}/${path}")
     }
 
     @Deprecated("Use exampleFromSnippet", ReplaceWith("exampleFromSnippet(clazz, snippetId, allowLongLines, wrap, lineLength, type)"))

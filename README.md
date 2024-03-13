@@ -174,7 +174,7 @@ mdCodeBlock(
 
 This README.md is of course created from kotlin code that 
 runs as part of the test suite. You can look at the kotlin 
-source code that generates this markdown [here](https://github.com/jillesvangurp/kotlin4example/tree/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/readme.kt).
+source code that generates this markdown [here](https://github.com/jillesvangurp/kotlin4example/blob/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/readme.kt).
 
 The code that writes the `README.md file` is as follows:
 
