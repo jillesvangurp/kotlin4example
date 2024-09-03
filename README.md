@@ -7,6 +7,8 @@ This project implements [literate programming](https://en.wikipedia.org/wiki/Lit
 for documenting projects. Having working code in your documentation, ensures that the examples you include are correct 
 and always up to date. And making it easy to include examples with your code lowers the barrier for writing good documentation.
 
+This library is intended for anyone that publishes some kind of Kotlin library or code and wants to document their code using Markdown files that contain working examples.
+
 ## Get started
 
 Add the dependency to your project and start writing some documentation. See below for some examples.
@@ -32,142 +34,70 @@ examples in the documentation working was a challenge. I'd refactor or rename so
 all my examples. Staying on top of that is a lot of work.
 
 Instead of just using one of the many documentation tools out there that can grab chunks of source code based on 
-some string marker, I instead came up with a better solution.
+some string marker, I instead came up with a **better solution**: Kotlin4example implements a **Markdown Kotlin DSL** that includes a few nifty features, including an `example` function that takes an arbitrary block of Kotlin code and turns it into a markdown code block.
 
-I wanted something that can leverage Kotlin's fantastic support for so-called internal DSLs. Like Ruby, you
-can create domain specific languages using Kotlin's language features. In Kotlin, this works with regular functions
-that take a block of code as a parameter. If such a parameter is the last one in a function, you can move the block outside 
-the parentheses. And if there are no other parameters those are optional. And then I realized that I could use 
-reflection to figure exactly from where the function call is made. This became the core 
-of what kotlin4example does. Any time you call example, it figures out from where in the code it is called and grabs the source 
-code in the block. 
+So, to write documentation, you simply use the DSL to write your documentation in Kotlin. You don't have to write all of it in Kotlin of course; it can include regular markdown files as well. But when writing examples, you just write them in Kotlin and the library turns them into markdown code blocks.
 
-The library has a few other features, which are detailed in the examples below. But the simple idea is what
-differentiates kotlin4example from other solutions. I'm not aware of any better or more convenient way to write 
-documentation for Kotlin libraries.
+There is of course more to this library. For more on that, check out the examples below. Which are of course generated with this library.
 
+## Getting Started
 
-## Usage
+After adding this library to your (test) dependencies, you can start adding code 
+to generate markdown. 
 
-### Example blocks
+### Creating a SourceRepository
 
-With Kotlin4Example you can mix examples and markdown easily. 
-An example is a code block
-and it is executed by default. Because it is a code block,
- you are forced to ensure
-it is syntactically correct and compiles. 
+The first thing you need is a `SourceRepository` definition. This is needed to tell
+kotlin4example about your repository.
 
-By executing it, you can further guarantee it does what it 
-is supposed to and you can
-intercept output and integrate that into your documentation.
-
-For example:
+Some of the functions in kotlin4example construct links to files in your github repository,
+or lookup code from files in your source code. 
 
 ```kotlin
-print("Hello World")
+val k4ERepo = SourceRepository(
+  // used to construct markdown links to files in your repository
+  repoUrl = "https://github.com/jillesvangurp/kotlin4example",
+  // default is main
+  branch = "master",
+  // this is the default
+  sourcePaths = setOf(
+    "src/main/kotlin",
+    "src/test/kotlin"
+  )
+)
 ```
 
-This example prints **Hello World** when it executes. 
+### Creating markdown
 
 ```kotlin
-// out is an ExampleOutput instance
-// with both stdout and the return
-// value as a Result<T>. Any exceptions
-// are captured as well.
-val out = example {
-  print("Hello World")
-}
-// this is how you can append arbitrary markdown
-+"""
-  This example prints **${out.stdOut}** when it executes. 
-""".trimIndent()
-```
-
-The block you pass to example can be a suspending block. It uses `runBlocking` to run it. Earlier
-versions of this library had a separate function for this; this is no longer needed.
-
-### Configuring examples
-
-Sometimes you just want to show but not run the code. You can control this with the 
-`runExample` parameter.
-
-```kotlin
-//
-example(
-  runExample = false,
-) {
-  // your code goes here
-}
-```
-
-The library imposes a line length of 80 characters on your examples. The 
-reason is that code blocks with horizontal scroll bars look ugly. 
-
-You can of course turn this off or turn on the built in wrapping (wraps at the 80th character) 
-
-```kotlin
-
-// making sure the example fits in a web page
-// long lines tend to look ugly in documentation
-example(
-  // default is 80
-  lineLength = 120,
-  // default is false
-  wrap = true,
-  // default is false
-  allowLongLines = true,
-
-  ) {
-  // your code goes here
-}
-```
-
-### Code snippets
-
-While it is nice to have executable blocks, 
-sometimes you just want to grab
-code directly from a file. You can do that with snippets.
-
-```kotlin
-// the BEGIN_ and END_ are optional but I find it
-// helps for readability.
-// BEGIN_MY_CODE_SNIPPET
-println("Example code that shows in a snippet")
-// END_MY_CODE_SNIPPET
-exampleFromSnippet("readme.kt", "MY_CODE_SNIPPET")
-```
-
-### Markdown
-
-```kotlin
-section("Section") {
+val myMarkdown = k4ERepo.md {
+  section("Introduction")
   +"""
-    You can use string literals, templates ${1 + 1}, 
-    and [links](https://github.com/jillesvangurp/kotlin4example)
-    or other markdown formatting.
+    Hello world!
   """.trimIndent()
 }
-// you can also just include markdown files
-// useful if you have a lot of markdown
-// content without code examples
-includeMdFile("intro.md")
-// link to things in your git repository
-mdLink(DocGenTest::class)
-mdLinkToRepoResource("build file", "build.gradle.kts")
-mdLinkToSelf("This class")
+println(myMarkdown)
 ```
 
-### Source code blocks
+This will generate some markdown that looks as follows.
 
-You can add your own source code blocks as well.
+```markdown
+## Introduction
+
+Hello world!
+
+
+```
+
+### Using your Markdown to create a page
+
+Kotlin4example has a simple page abstraction that you
+can use to organize your markdown content into pages and files
 
 ```kotlin
-mdCodeBlock(
-  code = """
-    Useful if you have some non kotlin code that you want to show
-  """.trimIndent(),
-  type = "text"
-)
+val page = Page(title = "Hello!", fileName = "hello.md")
+// creates hello.md
+page.write(myMarkdown)
 ```
 
 ### This README is generated
@@ -185,12 +115,181 @@ The code that writes the `README.md file` is as follows:
 class DocGenTest {
   @Test
   fun `generate readme for this project`() {
-    val readmePage = Page("Kotlin4Example", fileName = "README.md")
+    val readmePage = Page(
+      title = "Kotlin4Example",
+      fileName = "README.md"
+    )
     // readmeMarkdown is a lazy of the markdown content
     readmePage.write(markdown = readmeMarkdown)
   }
 }
 ```
+
+Here's a link to the source code on Github: [`DocGenTest`](https://github.com/jillesvangurp/kotlin4example/blob/master/src/test/kotlin/com/jillesvangurp/kotlin4example/DocGenTest.kt)
+
+## Usage
+
+### Example blocks
+
+With Kotlin4Example you can mix examples and markdown easily. 
+An example is a Kotlin code block. Because it is a code block,
+ you are forced to ensure it is syntactically correct and that it compiles. 
+
+By executing the block (you can disable this), you can further guarantee it does what it 
+is supposed to and you can intercept output and integrate that into your 
+documentation as well
+
+For example:
+
+```kotlin
+// out is an ExampleOutput instance
+// with both stdout and the return
+// value as a Result<T>. Any exceptions
+// are captured as well.
+val out = example {
+  print("Hello World")
+}
+// this is how you can append arbitrary markdown
++"""
+  This example prints **${out.stdOut}** when it executes. 
+""".trimIndent()
+```
+
+The block you pass to example can be a suspending block; so you can create examples for 
+your co-routine libraries too. Kotlin4example uses `runBlocking` to run your examples.
+
+When you include the above in your Markdown it will render as follows:
+
+```kotlin
+print("Hello World")
+```
+
+This example prints **Hello World** when it executes. 
+
+### Configuring examples
+
+Sometimes you just want to show but not run the code. You can control this with the 
+`runExample` parameter.
+
+```kotlin
+//
+example(
+  runExample = false,
+) {
+  // your code goes here
+  // but it won't run
+}
+```
+
+The library imposes a default line length of 80 characters on your examples. The 
+reason is that code blocks with long lines look ugly on web pages. E.g. Github will give 
+you a horizontal scrollbar.
+
+You can of course turn this off or turn on the built in wrapping (wraps at the 80th character) 
+
+```kotlin
+
+// making sure the example fits in a web page
+// long lines tend to look ugly in documentation
+example(
+  // use longer line length
+  // default is 80
+  lineLength = 120,
+  // wrap lines that are too long
+  // default is false
+  wrap = true,
+  // don't fail on lines that are too long
+  // default is false
+  allowLongLines = true,
+
+  ) {
+  // your code goes here
+}
+```
+
+### Code snippets
+
+While it is nice to have executable blocks as examples, 
+sometimes you just want to grab
+code directly from some Kotlin file. You can do that with snippets.
+
+```kotlin
+// BEGIN_MY_CODE_SNIPPET
+println("Example code that shows in a snippet")
+// END_MY_CODE_SNIPPET
+```
+
+```kotlin
+println("Example code that shows in a snippet")
+```
+
+The `BEGIN_` and `END_` prefix are optional but I find it helps readability.
+
+You include the code in your markdown as follows:
+
+```kotlin
+exampleFromSnippet(
+  sourceFileName = "com/jillesvangurp/kotlin4example/docs/readme.kt",
+  snippetId = "MY_CODE_SNIPPET"
+)
+```
+
+### Misc Markdown
+
+```kotlin
+section("Section") {
+  subSection("Sub Section") {
+    +"""
+      You can use string literals, templates ${1 + 1}, 
+      and [links](https://github.com/jillesvangurp/kotlin4example)
+      or other markdown formatting.
+    """.trimIndent()
+  }
+}
+section("Links") {
+
+  // you can also just include markdown files
+  // useful if you have a lot of markdown
+  // content without code examples
+  includeMdFile("intro.md")
+
+  // link to things in your git repository
+  mdLink(DocGenTest::class)
+
+  // link to things in one of your source directories
+  // you can customize where it looks in SourceRepository
+  mdLinkToRepoResource(
+    title = "A file",
+    relativeUrl = "com/jillesvangurp/kotlin4example/Kotlin4Example.kt"
+  )
+
+  val anotherPage = Page("Page 2", "page2.md")
+  // link to another page in your manual
+  mdPageLink(anotherPage)
+
+  // and of course you can link to your self
+  mdLinkToSelf("This class")
+}
+```
+
+### Source code blocks
+
+You can add your own source code blocks as well.
+
+```kotlin
+mdCodeBlock(
+  code = """
+    Useful if you have some non kotlin code that you want to show
+  """.trimIndent(),
+  type = "text"
+)
+```
+
+## Advanced topics
+
+### Organizing pages
+
+A manual typically contains multiple pages. So, it helps to get organized a little.
 
 ### Context receivers
 
@@ -229,7 +328,13 @@ kotlin {
 
 For more elaborate examples of using this library, checkout my 
 [kt-search](https://github.com/jillesvangurp/kt-search) project. That 
-project is where this project emerged from and all markdown in that project is generated by kotlin4example. Give it a 
-try on one of your own projects and let me know what you think.
+project is where this project emerged from and all markdown in that project is generated by kotlin4example. Give it a try on one of your own projects and let me know what you think.
 
+## Projects that use kotlin4example
+
+- [kt-search](https://github.com/jillesvangurp/kt-search)
+- [kotlin-opencage-client](https://github.com/jillesvangurp/kotlin-opencage-client)
+- [json-dsl](https://github.com/jillesvangurp/json-dsl)
+
+Create a pull request against [outro.md](https://github.com/jillesvangurp/kotlin4example/blob/master/src/test/kotlin/com/jillesvangurp/kotlin4example/docs/outro.md) if you want to add your project here.
 

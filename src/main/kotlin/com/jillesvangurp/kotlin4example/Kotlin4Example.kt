@@ -11,7 +11,10 @@ import kotlin.reflect.KClass
 private val logger: KLogger = KotlinLogging.logger { }
 
 fun mdLink(title: String, target: String) = "[$title]($target)"
+@Deprecated("use mdPageLink", ReplaceWith("mdPageLink"))
 fun mdLink(page: Page) = mdLink(page.title, page.fileName)
+
+fun mdPageLink(page: Page) = mdLink(page.title, page.fileName)
 
 fun md(sourceRepository: SourceRepository, block: Kotlin4Example.() -> Unit) =
     lazyOf(Kotlin4Example.markdown(sourceRepository, block))
