@@ -7,7 +7,7 @@ and always up to date. And making it easy to include examples with your code low
 
 This library is intended for anyone that publishes some kind of Kotlin library or code and wants to document their code using Markdown files that contain working examples.
 
-## Get started
+## Gradle
 
 Add the dependency to your project and start writing some documentation. See below for some examples.
 I tend to put my documentation code in my tests so running the tests produces the documentation as a side effect. 

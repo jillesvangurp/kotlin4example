@@ -261,12 +261,6 @@ val readmeMarkdown by k4ERepo.md {
     }
 
     section("Advanced topics") {
-        subSection("Organizing pages") {
-            +"""
-                A manual typically contains multiple pages. So, it helps to get organized a little.
-            """.trimIndent()
-
-        }
         subSection("Context receivers") {
 
             +"""
