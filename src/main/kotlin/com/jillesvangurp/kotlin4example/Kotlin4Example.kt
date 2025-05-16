@@ -64,6 +64,15 @@ class Kotlin4Example(
     }
 
     /**
+     * Create a sub section (### [title]) and use the [block] to specify what should be in the section.
+     */
+    fun subSubSection(title: String, block: (Kotlin4Example.() -> Unit)? = null) {
+        buf.appendLine("#### $title")
+        buf.appendLine()
+        block?.invoke(this)
+    }
+
+    /**
      * Create a markdown code block for some [code] of a particular [type].
      *
      * Use [allowLongLines] turn off the check for lines longer than [lineLength]
@@ -633,6 +642,55 @@ class Kotlin4Example(
                         it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample" &&
                         it.className != "io.inbot.eskotlinwrapper.manual.KotlinForExample\$Companion" // edge case
             }
+    }
+
+    fun table(headers: List<String>, rows: List<List<String>>) {
+        require(rows.all { it.size == headers.size }) {
+            "All rows must have the same number of columns as headers"
+        }
+
+        val allRows = listOf(headers) + rows
+        val columnWidths = headers.indices.map { col ->
+            allRows.maxOf { it[col].length }
+        }
+
+        fun formatRow(row: List<String>): String =
+            row.mapIndexed { i, cell -> cell.padEnd(columnWidths[i]) }
+                .joinToString(" | ", prefix = "| ", postfix = " |")
+
+        val separator = columnWidths.joinToString(" | ", prefix = "| ", postfix = " |") {
+            "-".repeat(it.coerceAtLeast(3)) // ensure minimum of 3 dashes for markdown
+        }
+
+        buf.appendLine(formatRow(headers))
+        buf.appendLine(separator)
+        rows.forEach { buf.appendLine(formatRow(it)) }
+        buf.appendLine()
+    }
+
+    fun blockquote(text: String) {
+        buf.appendLine("> ${text.trimIndent().replace("\n", "\n> ")}")
+        buf.appendLine()
+    }
+
+
+    fun unorderedList(vararg items: String) {
+        unorderedList(items.toList())
+    }
+
+
+    fun unorderedList(items: List<String>) {
+        items.forEach { buf.appendLine("- ${it.trim()}") }
+        buf.appendLine()
+    }
+
+    fun orderedList(vararg items: String) {
+        orderedList(items.toList())
+    }
+
+    fun orderedList(items: List<String>) {
+        items.forEachIndexed { i, item -> buf.appendLine("${i + 1}. ${item.trim()}") }
+        buf.appendLine()
     }
 
     companion object {

@@ -20,9 +20,10 @@ val k4ERepo = SourceRepository(
 // END_REPO_DEFINITION
 
 val readmeMarkdown by k4ERepo.md {
-    // for larger bits of text, it's nice to load them from a markdown file
+    // for larger bits of text, it's nice to just load them from a markdown file
     includeMdFile("intro.md")
 
+    // structure your markdown sections with kotlin nested blocks
     section("Getting Started") {
         +"""
             After adding this library to your (test) dependencies, you can start adding code 
@@ -33,12 +34,13 @@ val readmeMarkdown by k4ERepo.md {
 
             +"""
                 The first thing you need is a `SourceRepository` definition. This is needed to tell
-                kotlin4example about your repository.
+                kotlin4example about your repository, where to link, and where your code is.
                 
                 Some of the functions in kotlin4example construct links to files in your github repository,
                 or lookup code from files in your source code. 
             """.trimIndent()
 
+            // this is how you can include code snippets from existing kotlin files
             exampleFromSnippet("com/jillesvangurp/kotlin4example/docs/readme.kt", "REPO_DEFINITION")
         }
         subSection("Creating markdown") {
@@ -86,53 +88,54 @@ val readmeMarkdown by k4ERepo.md {
             """.trimIndent()
             exampleFromSnippet(DocGenTest::class, "READMEWRITE")
             +"""
-                Here's a link to the source code on Github: ${mdLink(DocGenTest::class)}
+                Here's a link to the source code on Github: ${mdLink(DocGenTest::class)}. 
+                
+                The code that constructs the markdown is a bit longer, you can find it 
+                ${mdLinkToRepoResource("here", "com/jillesvangurp/kotlin4example/docs/readme.kt")}.
             """.trimIndent()
         }
     }
-    section("Usage") {
-        subSection("Example blocks") {
-            +"""
-                With Kotlin4Example you can mix examples and markdown easily. 
-                An example is a Kotlin code block. Because it is a code block,
-                 you are forced to ensure it is syntactically correct and that it compiles. 
-                
-                By executing the block (you can disable this), you can further guarantee it does what it 
-                is supposed to and you can intercept output and integrate that into your 
-                documentation as well
-                
-                For example:
-            """.trimIndent()
+    section("Example blocks") {
+        +"""
+            With Kotlin4Example you can mix examples and markdown easily. 
+            An example is a Kotlin code block. Because it is a code block,
+             you are forced to ensure it is syntactically correct and that it compiles. 
+            
+            By executing the block (you can disable this), you can further guarantee it does what it 
+            is supposed to and you can intercept output and integrate that into your 
+            documentation as well
+            
+            For example:
+        """.trimIndent()
 
-            // a bit of kotlin4example inception here, but it works
-            example(runExample = false) {
-                // out is an ExampleOutput instance
-                // with both stdout and the return
-                // value as a Result<T>. Any exceptions
-                // are captured as well.
-                val out = example {
-                    print("Hello World")
-                }
-                // this is how you can append arbitrary markdown
-                +"""
-                    This example prints **${out.stdOut}** when it executes. 
-                """.trimIndent()
-            }
-            +"""
-                The block you pass to example can be a suspending block; so you can create examples for 
-                your co-routine libraries too. Kotlin4example uses `runBlocking` to run your examples.
-                
-                When you include the above in your Markdown it will render as follows:
-            """.trimIndent()
-
-            example {
+        // a bit of kotlin4example inception here, but it works
+        example(runExample = false) {
+            // out is an ExampleOutput instance
+            // with both stdout and the return
+            // value as a Result<T>. Any exceptions
+            // are captured as well.
+            val out = example {
                 print("Hello World")
-            }.let { out ->
-                // this is how you can append arbitrary markdown
-                +"""
-                    This example prints **${out.stdOut}** when it executes. 
-                """.trimIndent()
             }
+            // this is how you can append arbitrary markdown
+            +"""
+                This example prints **${out.stdOut}** when it executes. 
+            """.trimIndent()
+        }
+        +"""
+            The block you pass to example can be a suspending block; so you can create examples for 
+            your co-routine libraries too. Kotlin4example uses `runBlocking` to run your examples.
+            
+            When you include the above in your Markdown it will render as follows:
+        """.trimIndent()
+
+        example {
+            print("Hello World")
+        }.let { out ->
+            // this is how you can append arbitrary markdown
+            +"""
+                This example prints **${out.stdOut}** when it executes. 
+            """.trimIndent()
         }
 
         subSection("Configuring examples") {
@@ -194,32 +197,63 @@ val readmeMarkdown by k4ERepo.md {
             // little hack to avoid picking up this line ;-)
             exampleFromSnippet("com/jillesvangurp/kotlin4example/docs/readme.kt","MY_" + "CODE_SNIPPET")
             +"""
-                The `BEGIN_` and `END_` prefix are optional but I find it helps readability.
+                The `BEGIN_` and `END_` prefix are optional but it helps readability.
                 
                 You include the code in your markdown as follows:
             """.trimIndent()
 
             example(runExample = false) {
                 exampleFromSnippet(
+                    // relative path to your source file
+                    // setup your source modules in the repository
                     sourceFileName = "com/jillesvangurp/kotlin4example/docs/readme.kt",
                     snippetId = "MY_CODE_SNIPPET"
                 )
             }
         }
         subSection("Misc Markdown") {
-            // you can use our Kotlin DSL to structure your documentation.
+            //some more features to help you write markdown
 
-            example(runExample = false) {
-                section("Section") {
-                    subSection("Sub Section") {
-                        +"""
-                            You can use string literals, templates ${1 + 1}, 
-                            and [links](https://github.com/jillesvangurp/kotlin4example)
-                            or other markdown formatting.
-                        """.trimIndent()
+            subSubSection("Simple markdown") {
+                +"""
+                    This is how you can use the markdown dsl to generate markdown.
+                """.trimIndent()
+                example(runExample = true) {
+                    section("Section") {
+                        subSection("Sub Section") {
+                            +"""
+                                You can use string literals, templates ${1 + 1}, 
+                                and [links](https://github.com/jillesvangurp/kotlin4example)
+                                or other **markdown** formatting.
+                            """.trimIndent()
+
+
+                            subSubSection("Sub sub section") {
+                                +"""
+                                    There's more
+                                """.trimIndent()
+
+                                unorderedList("bullets","**bold**","*italic")
+
+                                orderedList("one","two","three")
+
+                                blockquote("""
+                                    The difference between code and poetry ...
+                                     
+                                    ... poetry doesn’t need to compile.
+                                    """.trimIndent()
+                                )
+
+                            }
+                        }
                     }
                 }
-                section("Links") {
+            }
+            subSubSection("Links") {
+                +"""
+                    Linking to different things in your repository.
+                """.trimIndent()
+                example(runExample = false) {
 
                     // you can also just include markdown files
                     // useful if you have a lot of markdown
@@ -244,6 +278,21 @@ val readmeMarkdown by k4ERepo.md {
                     mdLinkToSelf("This class")
                 }
             }
+
+            subSubSection("Tables") {
+                +"""
+                    Including tables is easy if you don't want to manually format them.
+                """.trimIndent()
+
+                example(runExample = true) {
+                    table(listOf("Function","Explanation"),listOf(
+                        listOf("mdLink","Add a link to a class or file in your repository"),
+                        listOf("mdLinkToRepoResource","Add a file in your repository"),
+                        listOf("includeMdFile","include a markdown file"),
+                        listOf("example","Example code block"),
+                    ))
+                }
+            }
         }
         subSection("Source code blocks") {
             +"""
@@ -252,53 +301,11 @@ val readmeMarkdown by k4ERepo.md {
             example(runExample = false) {
                 mdCodeBlock(
                     code = """
-                        Useful if you have some non kotlin code that you want to show
+                        Useful if you have some **non kotlin code** that you want to show
                     """.trimIndent(),
-                    type = "text"
+                    type = "markdown"
                 )
             }
-        }
-    }
-
-    section("Advanced topics") {
-        subSection("Context receivers") {
-
-            +"""
-                A new feature in Kotlin that you currently have to opt into is context receivers.
-                
-                Context receivers are useful for processing the output of your examples since you typically
-                need Kotlin4Example when you use the ExampleOutput.
-                
-                I don't want
-                to force people to opt into context receivers yet but it's easy to add this yourself.
-                
-                Simply add a simple extension function like this:.
-            """.trimIndent()
-
-            mdCodeBlock("""
-                context(Kotlin4Example)!
-                fun ExampleOutput<*>.printStdOut() {
-                  +""${'"'}
-                    This prints:
-                  ""${'"'}.trimIndent()
-                 
-                  mdCodeBlock(stdOut, type = "text", wrap = true)
-                }
-            """.trimIndent(), "kotlin")
-
-            +"""
-                And then you can use it `example { 1+1}.printStdOut()`.
-                
-                To opt into context receivers, add this to your build file
-            """.trimIndent()
-            mdCodeBlock("""
-                kotlin {
-                    compilerOptions {
-                        freeCompilerArgs= listOf("-Xcontext-receivers")
-                    }
-                }                
-            """.trimIndent(), "kotlin")
-
         }
     }
 

@@ -17,6 +17,7 @@ dependencies {
 
     testImplementation(Testing.junit.jupiter.api)
     testRuntimeOnly(Testing.junit.jupiter.engine)
+    testImplementation("org.junit.platform:junit-platform-launcher:_")
     testImplementation(Testing.kotest.assertions.core)
 
     // setup logging
