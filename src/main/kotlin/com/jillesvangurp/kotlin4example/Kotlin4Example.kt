@@ -345,18 +345,6 @@ class Kotlin4Example(
     /**
      * Add the output of your example to the markdown.
      *
-     * Note. a future version of this library will use context receivers for this.
-     * If you can opt in to this in your code base, it's easy to add this yourself:
-     *
-     * ```
-     * context(Kotlin4Example)
-     * fun ExampleOutput<*>.printStdOut() {
-     *     +"""
-     *         This prints:
-     *     """.trimIndent()
-     *
-     *     mdCodeBlock(stdOut, type = "text", wrap = true)
-     * }
      * ```
      */
     fun <T> renderExampleOutput(
